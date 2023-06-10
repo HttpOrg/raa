@@ -1,0 +1,1407 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: HttpRafa <rafael@kienitz.link>
+Date: Sat, 10 Jun 2023 22:19:04 +0200
+Subject: [PATCH] Added network core
+
+
+diff --git a/src/main/java/de/network/systems/core/paper/database/Cache.java b/src/main/java/de/network/systems/core/paper/database/Cache.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..fb84cc3d66c60a863a3b8f2486b7c045cb8eb647
+--- /dev/null
++++ b/src/main/java/de/network/systems/core/paper/database/Cache.java
+@@ -0,0 +1,99 @@
++/*
++ * MIT License
++ *
++ * Copyright (c) 2023 HttpRafa
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to deal
++ * in the Software without restriction, including without limitation the rights
++ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++ * copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in all
++ * copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ */
++
++package de.network.systems.core.paper.database;
++
++import com.google.gson.JsonElement;
++import com.google.gson.JsonObject;
++import de.network.systems.core.Network;
++import de.network.systems.core.database.NetworkCache;
++import io.lettuce.core.RedisClient;
++import io.lettuce.core.RedisURI;
++import org.jetbrains.annotations.NotNull;
++
++/**
++ * @author Rafael K.
++ * @since 5:45 PM, 2/17/2023
++ */
++
++public class Cache {
++
++    public static NetworkCache createCache(@NotNull JsonElement configuration) {
++        JsonObject jsonObject = configuration.getAsJsonObject();
++        NetworkCache.CacheType cacheType = NetworkCache.CacheType.valueOf(jsonObject.get("type").getAsString());
++        try {
++            return createCache(cacheType, configuration);
++        } catch (Throwable throwable) {
++            Network.core().error("Failed to create cache of type " + cacheType.name() + " trying to use " + NetworkCache.CacheType.LOCAL_CACHE.name() + "...", throwable);
++            return createCache(NetworkCache.CacheType.LOCAL_CACHE, configuration);
++        }
++    }
++
++    public static NetworkCache createCache(NetworkCache.@NotNull CacheType cacheType, JsonElement configuration) {
++        switch (cacheType) {
++            case REDIS -> {
++                return new Redis().load(configuration);
++            }
++            default -> {
++                return new LocalCache().load(configuration);
++            }
++        }
++    }
++
++
++    public static class Redis extends NetworkCache.Redis {
++
++        public Cache.Redis load(@NotNull JsonElement jsonElement) {
++            JsonObject jsonObject = jsonElement.getAsJsonObject().get("redis").getAsJsonObject();
++            {
++                String host = jsonObject.get("host").getAsString();
++                int port = jsonObject.get("port").getAsInt();
++                char[] password = jsonObject.get("password").getAsString().toCharArray();
++
++                RedisURI redisURI = RedisURI.Builder.redis(host, port).withPassword(password).build();
++                redisClient = RedisClient.create(redisURI);
++
++                init();
++
++                asyncCommands.ping().thenAccept(result -> {
++                    Network.core().info("Redis connection established | " + result);
++                });
++            }
++            return this;
++        }
++
++    }
++
++    public static class LocalCache extends NetworkCache.LocalCache {
++
++        public Cache.LocalCache load(@NotNull JsonElement jsonElement) {
++
++            init();
++
++            return this;
++        }
++
++    }
++
++}
+diff --git a/src/main/java/de/network/systems/core/paper/database/Database.java b/src/main/java/de/network/systems/core/paper/database/Database.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..45cc4e5100877dfb9b67efbb46193c3ace1f5f8b
+--- /dev/null
++++ b/src/main/java/de/network/systems/core/paper/database/Database.java
+@@ -0,0 +1,201 @@
++/*
++ * MIT License
++ *
++ * Copyright (c) 2023 HttpRafa
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to deal
++ * in the Software without restriction, including without limitation the rights
++ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++ * copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in all
++ * copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ */
++
++package de.network.systems.core.paper.database;
++
++import com.google.gson.JsonArray;
++import com.google.gson.JsonElement;
++import com.google.gson.JsonObject;
++import com.mongodb.MongoClientSettings;
++import com.mongodb.MongoCredential;
++import com.mongodb.ServerAddress;
++import com.mongodb.client.MongoClients;
++import com.mongodb.client.MongoCollection;
++import de.network.systems.core.Network;
++import de.network.systems.core.database.NetworkDatabase;
++import de.network.systems.core.throwables.DatabaseLoadException;
++import org.bson.Document;
++import org.bson.UuidRepresentation;
++import org.bson.codecs.configuration.CodecProvider;
++import org.bson.codecs.configuration.CodecRegistries;
++import org.bson.codecs.configuration.CodecRegistry;
++import org.bson.codecs.pojo.PojoCodecProvider;
++import org.jetbrains.annotations.NotNull;
++
++import java.sql.DriverManager;
++import java.util.ArrayList;
++import java.util.List;
++
++/**
++ * @author Rafael K.
++ * @since 8:54 PM, 1/21/2023
++ */
++
++public class Database {
++
++    public static NetworkDatabase createDatabase(@NotNull JsonElement configuration) throws DatabaseLoadException {
++        JsonObject jsonObject = configuration.getAsJsonObject();
++        NetworkDatabase.DatabaseType databaseType = NetworkDatabase.DatabaseType.valueOf(jsonObject.get("type").getAsString());
++        try {
++            return createDatabase(databaseType, configuration);
++        } catch (DatabaseLoadException exception) {
++            Network.core().error("Failed to create database of type " + databaseType.name() + " trying to use " + NetworkDatabase.DatabaseType.JSON.name() + "...", exception.cause());
++            return createDatabase(NetworkDatabase.DatabaseType.JSON, configuration); // Fallback database
++        } catch (Throwable throwable) {
++            Network.core().error("Failed to create database of type " + databaseType.name() + " trying to use " + NetworkDatabase.DatabaseType.JSON.name() + "...", throwable);
++            return createDatabase(NetworkDatabase.DatabaseType.JSON, configuration); // Fallback database
++        }
++    }
++
++    public static NetworkDatabase createDatabase(NetworkDatabase.@NotNull DatabaseType databaseType, @NotNull JsonElement configuration) throws DatabaseLoadException {
++        switch (databaseType) {
++            case MONGODB -> {
++                return new MongoDB().load(configuration);
++            }
++            case SQL -> {
++                return new SQL().load(configuration);
++            }
++            default -> {
++                return new Json().load(configuration);
++            }
++        }
++    }
++
++    public static class MongoDB extends NetworkDatabase.MongoDB {
++
++        public de.network.systems.core.paper.database.Database.MongoDB load(@NotNull JsonElement configuration) throws DatabaseLoadException {
++            try {
++                JsonObject jsonObject = configuration.getAsJsonObject().get("mongodb").getAsJsonObject();
++                {
++                    JsonArray connections = jsonObject.getAsJsonArray("connections");
++                    JsonObject credential = jsonObject.getAsJsonObject("credential");
++
++                    List<ServerAddress> serverAddresses = new ArrayList<>();
++                    for (JsonElement item : connections) {
++                        JsonObject connection = item.getAsJsonObject();
++
++                        String host = connection.get("host").getAsString();
++                        int port = connection.get("port").getAsInt();
++                        serverAddresses.add(new ServerAddress(host, port));
++                    }
++
++                    String user = credential.get("user").getAsString();
++                    String database = credential.get("database").getAsString();
++                    char[] password = credential.get("password").getAsString().toCharArray();
++
++                    CodecProvider codecProvider = PojoCodecProvider.builder().automatic(true).build();
++                    CodecRegistry codecRegistry = CodecRegistries.fromRegistries(MongoClientSettings.getDefaultCodecRegistry(), CodecRegistries.fromProviders(codecProvider));
++
++                    mongoClient = MongoClients.create(MongoClientSettings.builder()
++                            .applyToClusterSettings(builder -> builder.hosts(serverAddresses))
++                            .credential(MongoCredential.createCredential(user, database, password))
++                            .uuidRepresentation(UuidRepresentation.STANDARD)
++                            .codecRegistry(codecRegistry)
++                            .build());
++
++                    for (Database value : Database.values()) {
++                        databases.put(value, mongoClient.getDatabase(value.database()));
++                    }
++                    for (DatabaseCollection value : DatabaseCollection.values()) {
++                        MongoCollection<Document> collection = databases.get(value.database()).getCollection(value.collection());
++                        if (value.setup() != null) value.setup().accept(collection);
++                        collections.put(value, collection);
++                    }
++                    init();
++                }
++            } catch (Throwable throwable) {
++                throw new DatabaseLoadException(throwable, type());
++            }
++            return this;
++        }
++    }
++
++    public static class SQL extends NetworkDatabase.SQL {
++
++        public Database.SQL load(@NotNull JsonElement configuration) throws DatabaseLoadException {
++            try {
++                JsonObject jsonObject = configuration.getAsJsonObject().get("sql").getAsJsonObject();
++                {
++
++                    JsonObject object = jsonObject.get("database").getAsJsonObject();
++                    String url = object.get("url").getAsString();
++
++                    Class.forName(object.get("driver").getAsString());
++
++                    object = jsonObject.get("properties").getAsJsonObject();
++                    String username = object.get("user").getAsString();
++                    String password = object.get("password").getAsString();
++
++                    List<Table> tables = new ArrayList<>();
++                    {
++                        JsonArray tablesArray = jsonObject.get("tables").getAsJsonArray();
++                        for (JsonElement jsonElement : tablesArray) {
++                            JsonObject tableObject = jsonElement.getAsJsonObject();
++                            String name = tableObject.get("name").getAsString();
++                            List<TableData> dataList = new ArrayList<>();
++
++                            {
++                                JsonArray dataArray = tableObject.get("data").getAsJsonArray();
++                                for (JsonElement element : dataArray) {
++                                    JsonObject data = element.getAsJsonObject();
++                                    if (data.has("system")) {
++                                        SystemType type = SystemType.valueOf(data.get("system").getAsString());
++                                        dataList.add(new TableData(type.dataName(), type.type(), type.addition()));
++                                        continue;
++                                    }
++
++                                    dataList.add(new TableData(data.get("name").getAsString(), data.get("type").getAsString(), data.get("addition") == null ? null : data.get("addition").getAsString()));
++                                }
++                            }
++
++                            tables.add(new Table(name, dataList.toArray(new TableData[0])));
++                        }
++                    }
++                    super.tables = tables.toArray(new Table[0]);
++
++                    super.connection = DriverManager.getConnection(url, username, password);
++                    init();
++                }
++            } catch (Throwable throwable) {
++                throw new DatabaseLoadException(throwable, type());
++            }
++            return this;
++        }
++
++    }
++
++    public static class Json extends NetworkDatabase.Json {
++
++        public Database.Json load(@NotNull JsonElement configuration) throws DatabaseLoadException {
++            try {
++                init();
++                return this;
++            } catch (Throwable throwable) {
++                throw new DatabaseLoadException(throwable, type());
++            }
++        }
++
++    }
++
++}
+diff --git a/src/main/java/de/network/systems/core/paper/player/OfflinePlayer.java b/src/main/java/de/network/systems/core/paper/player/OfflinePlayer.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..e17bc8bd10c998e72067f1fa1154cdac302caf40
+--- /dev/null
++++ b/src/main/java/de/network/systems/core/paper/player/OfflinePlayer.java
+@@ -0,0 +1,231 @@
++/*
++ * MIT License
++ *
++ * Copyright (c) 2023 HttpRafa
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to deal
++ * in the Software without restriction, including without limitation the rights
++ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++ * copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in all
++ * copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ */
++
++package de.network.systems.core.paper.player;
++
++import de.network.systems.core.Network;
++import de.network.systems.core.language.Language;
++import de.network.systems.core.player.NetworkPlayer;
++import de.network.systems.core.player.OfflineNetworkPlayer;
++import de.network.systems.core.player.data.DataProperty;
++import de.network.systems.core.player.data.Product;
++import de.network.systems.core.player.data.Setting;
++import de.network.systems.core.player.money.Transaction;
++
++import java.util.HashMap;
++import java.util.UUID;
++import java.util.concurrent.CompletableFuture;
++
++/**
++ * @author Rafael K.
++ * @since 22:19, 04.06.23
++ */
++
++public class OfflinePlayer implements OfflineNetworkPlayer {
++
++    private final UUID uniqueId;
++    private final String name;
++
++    private final HashMap<DataProperty<?>, Object> cachedProperties = new HashMap<>();
++    private final HashMap<Setting<?>, Object> cachedSettings = new HashMap<>();
++    private final HashMap<Product<?>, Product.ProductState<?>> cachedProducts = new HashMap<>();
++
++    public OfflinePlayer(UUID uniqueId, String name) {
++        this.uniqueId = uniqueId;
++        this.name = name;
++    }
++
++    @Override
++    public UUID uniqueId() {
++        return this.uniqueId;
++    }
++
++    @Override
++    public String username() {
++        return this.name;
++    }
++
++    @Override
++    public NetworkPlayer online() {
++        return Network.core().player(this.uniqueId);
++    }
++
++    /* Utils */
++    @Override
++    public <T> CompletableFuture<Transaction.Result<T>> executeTransaction(Transaction<T> transaction) {
++        return requestProperty(DataProperty.MONEY_PROPERTY, null, true).thenApply(currentMoney -> {
++            if (currentMoney < transaction.amount()) {
++                return new Transaction.Result<>(transaction, Transaction.ResultType.FAILED, new Transaction.Payload.NotEnoughMoney(transaction.amount() - currentMoney));
++            }
++            currentMoney -= transaction.amount();
++            Product<T> product = transaction.product();
++
++            writeProperty(DataProperty.MONEY_PROPERTY, currentMoney);
++            writeProduct(product, Product.ProductState.unlocked(product.defaultValue().value()));
++            // TODO: Log the transaction
++
++            return new Transaction.Result<>(transaction, Transaction.ResultType.SUCCESSFUL, new Transaction.Payload.MoneyLeft(currentMoney));
++        });
++    }
++
++    /* Settings */
++    @Override
++    public <T> CompletableFuture<T> requestSetting(Setting<T> setting) {
++        return requestSetting(setting, null, false);
++    }
++
++    @Override
++    public <T> CompletableFuture<T> requestSetting(Setting<T> setting, T defaultValue, boolean forceUpdate) {
++        return CompletableFuture.supplyAsync(() -> syncRequestSetting(setting, defaultValue, forceUpdate), Network.EXECUTOR_SERVICE);
++    }
++
++    @Override
++    public <T> T syncRequestSetting(Setting<T> setting) {
++        return syncRequestSetting(setting, null, false);
++    }
++
++    @Override
++    @SuppressWarnings("unchecked")
++    public <T> T syncRequestSetting(Setting<T> setting, T defaultValue, boolean forceUpdate) {
++        if (this.cachedSettings.containsKey(setting) && !forceUpdate) {
++            return (T) this.cachedSettings.get(setting);
++        } else {
++            T value = Network.core().database().requestSetting(this, setting, defaultValue);
++            this.cachedSettings.put(setting, value);
++            return value;
++        }
++    }
++
++    @Override
++    public <T> CompletableFuture<T> writeSetting(Setting<T> setting, T value) {
++        return CompletableFuture.supplyAsync(() -> {
++            Network.core().database().writeSetting(this, setting, value);
++            if (this.cachedSettings.containsKey(setting)) {
++                this.cachedSettings.replace(setting, value);
++            } else {
++                this.cachedSettings.put(setting, value);
++            }
++            return value;
++        }, Network.EXECUTOR_SERVICE);
++    }
++
++    /* Properties */
++    @Override
++    public <T> CompletableFuture<T> requestProperty(DataProperty<T> property) {
++        return requestProperty(property, null, false);
++    }
++
++    @Override
++    public <T> CompletableFuture<T> requestProperty(DataProperty<T> property, T defaultValue, boolean forceUpdate) {
++        return CompletableFuture.supplyAsync(() -> syncRequestProperty(property, defaultValue, forceUpdate), Network.EXECUTOR_SERVICE);
++    }
++
++    @Override
++    public <T> T syncRequestProperty(DataProperty<T> property) {
++        return syncRequestProperty(property, null, false);
++    }
++
++    @Override
++    @SuppressWarnings("unchecked")
++    public <T> T syncRequestProperty(DataProperty<T> property, T defaultValue, boolean forceUpdate) {
++        if (this.cachedProperties.containsKey(property) && !forceUpdate) {
++            return (T) this.cachedProperties.get(property);
++        } else {
++            T value = Network.core().database().requestProperty(this, property, defaultValue);
++            this.cachedProperties.put(property, value);
++            return value;
++        }
++    }
++
++    @Override
++    public <T> CompletableFuture<T> writeProperty(DataProperty<T> property, T value) {
++        return CompletableFuture.supplyAsync(() -> {
++            Network.core().database().writeProperty(this, property, value);
++            if (this.cachedProperties.containsKey(property)) {
++                this.cachedProperties.replace(property, value);
++            } else {
++                this.cachedProperties.put(property, value);
++            }
++            return value;
++        }, Network.EXECUTOR_SERVICE);
++    }
++
++    /* Product */
++    @Override
++    public <T> CompletableFuture<Product.ProductState<T>> requestProduct(Product<T> product) {
++        return requestProduct(product, null, false);
++    }
++
++    @Override
++    public <T> CompletableFuture<Product.ProductState<T>> requestProduct(Product<T> product, Product.ProductState<T> defaultValue, boolean forceUpdate) {
++        return CompletableFuture.supplyAsync(() -> syncRequestProduct(product, defaultValue, forceUpdate), Network.EXECUTOR_SERVICE);
++    }
++
++    @Override
++    public <T> Product.ProductState<T> syncRequestProduct(Product<T> product) {
++        return syncRequestProduct(product, null, false);
++    }
++
++    @Override
++    @SuppressWarnings("unchecked")
++    public <T> Product.ProductState<T> syncRequestProduct(Product<T> product, Product.ProductState<T> defaultValue, boolean forceUpdate) {
++        if (this.cachedProducts.containsKey(product) && !forceUpdate) {
++            return (Product.ProductState<T>) this.cachedProducts.get(product);
++        } else {
++            Product.ProductState<T> value = Network.core().database().requestProduct(this, product, defaultValue);
++            this.cachedProducts.put(product, value);
++            return value;
++        }
++    }
++
++    @Override
++    public <T> CompletableFuture<Product.ProductState<T>> writeProduct(Product<T> product, Product.ProductState<T> value) {
++        return CompletableFuture.supplyAsync(() -> {
++            Network.core().database().writeProduct(this, product, value);
++            if (this.cachedProducts.containsKey(product)) {
++                this.cachedProducts.replace(product, value);
++            } else {
++                this.cachedProducts.put(product, value);
++            }
++            return value;
++        }, Network.EXECUTOR_SERVICE);
++    }
++
++    /* Methods */
++    @Override
++    public CompletableFuture<Language> language() {
++        return requestProperty(DataProperty.LANGUAGE_PROPERTY);
++    }
++
++    @Override
++    public Language syncLanguage() {
++        return syncRequestProperty(DataProperty.LANGUAGE_PROPERTY);
++    }
++
++    @Override
++    public String asString() {
++        return name + ":" + uniqueId.toString();
++    }
++
++}
+diff --git a/src/main/java/de/network/systems/core/paper/player/PlayerManager.java b/src/main/java/de/network/systems/core/paper/player/PlayerManager.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..6afb0125766b49a174544b5216155bfe7cfa4b99
+--- /dev/null
++++ b/src/main/java/de/network/systems/core/paper/player/PlayerManager.java
+@@ -0,0 +1,54 @@
++package de.network.systems.core.paper.player;
++
++import de.network.systems.core.Network;
++import de.network.systems.core.player.NetworkPlayer;
++import de.network.systems.core.player.OfflineNetworkPlayer;
++import de.network.systems.core.player.systems.NetworkPlayerManager;
++import org.bukkit.Bukkit;
++import org.bukkit.craftbukkit.CraftServer;
++
++import java.util.Collection;
++import java.util.UUID;
++import java.util.concurrent.CompletableFuture;
++import java.util.stream.Collectors;
++
++/**
++ * @author Rafael K.
++ * @since 23:39, 04.06.23
++ */
++
++public class PlayerManager implements NetworkPlayerManager {
++
++    private final CraftServer craftServer;
++
++    public PlayerManager(CraftServer craftServer) {
++        this.craftServer = craftServer;
++    }
++
++    @Override
++    public NetworkPlayer player(UUID uuid) {
++        return craftServer.getPlayer(uuid);
++    }
++
++    @Override
++    @Deprecated
++    public NetworkPlayer player(String name) {
++        return craftServer.getPlayer(name);
++    }
++
++    @Override
++    public CompletableFuture<OfflineNetworkPlayer> offlinePlayer(UUID uniqueId) {
++        return CompletableFuture.supplyAsync(() -> Network.core().database().nameFromUuid(uniqueId).map(name -> new OfflinePlayer(uniqueId, name)).orElse(null), Network.EXECUTOR_SERVICE);
++    }
++
++    @Override
++    public CompletableFuture<OfflineNetworkPlayer> offlinePlayer(String name) {
++        return CompletableFuture.supplyAsync(() -> Network.core().database().uuidFromName(name).map(uuid -> new OfflinePlayer(uuid, name)).orElse(null), Network.EXECUTOR_SERVICE);
++    }
++
++    @Override
++    public Collection<NetworkPlayer> players() {
++        return Bukkit.getOnlinePlayers().stream().map(player -> (NetworkPlayer)player).collect(Collectors.toList());
++    }
++
++}
+diff --git a/src/main/java/de/network/systems/core/paper/utils/RegisterUtils.java b/src/main/java/de/network/systems/core/paper/utils/RegisterUtils.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..f24b65a4190f2ac1d85c5def18d6869b8a0afea4
+--- /dev/null
++++ b/src/main/java/de/network/systems/core/paper/utils/RegisterUtils.java
+@@ -0,0 +1,261 @@
++package de.network.systems.core.paper.utils;
++
++import de.network.systems.core.Network;
++import de.network.systems.core.annotations.registery.CommandEntry;
++import de.network.systems.core.annotations.registery.ListenerEntry;
++import de.network.systems.core.classes.binary.ClassUtils;
++import de.network.systems.core.plugin.ServerHolder;
++import de.network.systems.core.utils.NetworkUtils;
++import org.bukkit.Server;
++import org.bukkit.command.CommandExecutor;
++import org.bukkit.command.PluginCommand;
++import org.bukkit.command.TabCompleter;
++import org.bukkit.event.Event;
++import org.bukkit.event.EventPriority;
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.Listener;
++import org.bukkit.plugin.Plugin;
++import org.jetbrains.annotations.NotNull;
++
++import java.io.IOException;
++import java.lang.reflect.InvocationTargetException;
++import java.util.ArrayList;
++import java.util.HashMap;
++import java.util.List;
++import java.util.UUID;
++import java.util.function.Consumer;
++
++/**
++ * @author Rafael K.
++ * @since 23:35, 04.06.23
++ */
++
++public class RegisterUtils implements NetworkUtils {
++
++
++    public static final RegisterUtils UTILS = new RegisterUtils();
++
++    private final HashMap<UUID, Listener> boundListeners = new HashMap<>();
++
++    private final List<RegisteredListener> listeners = new ArrayList<>();
++    // private final List<RegisteredCommand> commands = new ArrayList<>();
++
++    @Override
++    public void registerCommands(@NotNull ServerHolder plugin, ClassLoader classLoader, String... paths) throws IOException, ClassNotFoundException, InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException {
++        if (plugin.server() instanceof Server server) {
++            for (Class<?> aClass : ClassUtils.classesFromPackages(classLoader, paths)) {
++                if (aClass.isAnnotationPresent(CommandEntry.class) && CommandExecutor.class.isAssignableFrom(aClass)) {
++                    registerCommand(server, plugin, aClass);
++                }
++            }
++        } else {
++            throw new IllegalArgumentException("Server must be a bukkit server instance");
++        }
++    }
++
++    @Override
++    public void registerListeners(@NotNull ServerHolder plugin, ClassLoader classLoader, String... paths) throws IOException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
++        if (plugin.server() instanceof Server server) {
++            for (Class<?> aClass : ClassUtils.classesFromPackages(classLoader, paths)) {
++                if (aClass.isAnnotationPresent(ListenerEntry.class) && Listener.class.isAssignableFrom(aClass)) {
++                    registerListener(server, plugin, aClass);
++                }
++            }
++        } else {
++            throw new IllegalArgumentException("Server must be a bukkit server instance");
++        }
++    }
++
++    @Override
++    public void registerAll(@NotNull ServerHolder plugin, ClassLoader classLoader, String @NotNull ... paths) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
++        if (plugin.server() instanceof Server server) {
++            for (Class<?> aClass : ClassUtils.classesFromPackages(classLoader, paths)) {
++                if (aClass.isAnnotationPresent(ListenerEntry.class) && Listener.class.isAssignableFrom(aClass)) {
++                    registerListener(server, plugin, aClass);
++                } else if (aClass.isAnnotationPresent(CommandEntry.class) && CommandExecutor.class.isAssignableFrom(aClass)) {
++                    registerCommand(server, plugin, aClass);
++                }
++            }
++        } else {
++            throw new IllegalArgumentException("Server must be a bukkit server instance");
++        }
++    }
++
++    private void registerListener(@NotNull Server server, @NotNull ServerHolder plugin, @NotNull Class<?> listenerClass) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
++        Object instance = listenerClass.getDeclaredConstructor().newInstance();
++        server.getPluginManager().registerEvents((Listener) instance, (Plugin) plugin);
++        this.listeners.add(new RegisteredListener(plugin.getClass(), (Listener) instance, listenerClass.getAnnotation(ListenerEntry.class)));
++    }
++
++    private void registerCommand(@NotNull Server server, @NotNull ServerHolder plugin, @NotNull Class<?> commandClass) throws InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException {
++        CommandEntry commandEntry = commandClass.getAnnotation(CommandEntry.class);
++        var constructor = PluginCommand.class.getDeclaredConstructor(String.class, Plugin.class);
++        constructor.setAccessible(true);
++        PluginCommand pluginCommand = constructor.newInstance(commandEntry.name(), (Plugin) plugin);
++        constructor.setAccessible(false);
++        if (server.getCommandMap().register(commandEntry.name(), commandEntry.name(), pluginCommand)) {
++            Network.core().info("(" + plugin.getClass().getSimpleName() + ") Registered command[" + commandEntry.name() + "]");
++        } else {
++            Network.core().info("(" + plugin.getClass().getSimpleName() + ") Registered command[" + commandEntry.name() + "] using a fallback prefix");
++        }
++        Object instance = commandClass.getDeclaredConstructor().newInstance();
++        pluginCommand.setExecutor((CommandExecutor) instance);
++        if (!commandEntry.description().isEmpty() && !commandEntry.description().isBlank()) {
++            pluginCommand.setDescription(commandEntry.description());
++        }
++        if (!commandEntry.permission().isEmpty() && !commandEntry.permission().isBlank()) {
++            pluginCommand.setPermission(commandEntry.permission());
++        }
++        if (commandEntry.aliases().length > 0) {
++            pluginCommand.setAliases(List.of(commandEntry.aliases()));
++        }
++        if (TabCompleter.class.isAssignableFrom(commandClass)) {
++            pluginCommand.setTabCompleter((TabCompleter) instance);
++        }
++        // this.commands.add(new RegisteredCommand(plugin.getClass(), (CommandExecutor) instance, commandEntry));
++    }
++
++    @Override
++    public void disableListener(ServerHolder plugin, Class<?> listener) {
++        this.listeners.forEach(item -> {
++            if (item.active() && item.plugin().isAssignableFrom(plugin.getClass()) && item.listener().getClass().isAssignableFrom(listener)) {
++                item.active(false);
++                HandlerList.unregisterAll(item.listener());
++            }
++        });
++    }
++
++    @Override
++    public void enableListener(@NotNull ServerHolder plugin, Class<?> listener) {
++        if (plugin.server() instanceof Server server) {
++            this.listeners.forEach(item -> {
++                if (!item.active() && item.plugin().isAssignableFrom(plugin.getClass()) && item.listener().getClass().isAssignableFrom(listener)) {
++                    item.active(true);
++                    server.getPluginManager().registerEvents(item.listener(), (Plugin) plugin);
++                }
++            });
++        } else {
++            throw new IllegalArgumentException("Server must be a bukkit server instance");
++        }
++    }
++
++    @Override
++    public void disableListener(ServerHolder plugin, String name) {
++        this.listeners.forEach(item -> {
++            if (item.active() && item.plugin().isAssignableFrom(plugin.getClass()) && item.listenerEntry().name().equalsIgnoreCase(name)) {
++                item.active(false);
++                HandlerList.unregisterAll(item.listener());
++            }
++        });
++    }
++
++    @Override
++    public void enableListener(@NotNull ServerHolder plugin, String name) {
++        if (plugin.server() instanceof Server server) {
++            this.listeners.forEach(item -> {
++                if (!item.active() && item.plugin().isAssignableFrom(plugin.getClass()) && item.listenerEntry().name().equalsIgnoreCase(name)) {
++                    item.active(true);
++                    server.getPluginManager().registerEvents(item.listener(), (Plugin) plugin);
++                }
++            });
++        } else {
++            throw new IllegalArgumentException("Server must be a bukkit server instance");
++        }
++    }
++
++    @SuppressWarnings("unchecked")
++    @Override
++    public <T> UUID registerEventCallback(@NotNull ServerHolder plugin, Class<T> eventClass, Consumer<T> callback) {
++        if (plugin.server() instanceof Server server) {
++            UUID uniqueId = UUID.randomUUID();
++            Listener listener = new Listener() {
++            };
++            this.boundListeners.put(uniqueId, listener);
++            server.getPluginManager().registerEvent((Class<? extends Event>) eventClass, listener, EventPriority.NORMAL, (ignored, event) -> callback.accept((T) event), (Plugin) plugin);
++            return uniqueId;
++        } else {
++            throw new IllegalArgumentException("Server must be a bukkit server instance");
++        }
++    }
++
++    @Override
++    public void unregisterEventCallback(ServerHolder plugin, UUID uniqueId) {
++        if (this.boundListeners.containsKey(uniqueId)) {
++            HandlerList.unregisterAll(this.boundListeners.get(uniqueId));
++            this.boundListeners.remove(uniqueId);
++        }
++    }
++
++    private static class RegisteredListener {
++
++        private final Class<? extends ServerHolder> plugin;
++        private final Listener listener;
++        private final ListenerEntry listenerEntry;
++
++        private boolean active = true;
++
++        public RegisteredListener(Class<? extends ServerHolder> plugin, Listener listener, ListenerEntry listenerEntry) {
++            this.plugin = plugin;
++            this.listener = listener;
++            this.listenerEntry = listenerEntry;
++        }
++
++        public Class<? extends ServerHolder> plugin() {
++            return plugin;
++        }
++
++        public Listener listener() {
++            return listener;
++        }
++
++        public ListenerEntry listenerEntry() {
++            return listenerEntry;
++        }
++
++        public boolean active() {
++            return active;
++        }
++
++        public void active(boolean active) {
++            this.active = active;
++        }
++
++    }
++
++    private static class RegisteredCommand {
++
++        private final Class<? extends ServerHolder> plugin;
++        private final CommandExecutor command;
++        private final CommandEntry commandEntry;
++
++        private boolean active = true;
++
++        public RegisteredCommand(Class<? extends ServerHolder> plugin, CommandExecutor command, CommandEntry commandEntry) {
++            this.plugin = plugin;
++            this.command = command;
++            this.commandEntry = commandEntry;
++        }
++
++        public Class<? extends ServerHolder> plugin() {
++            return plugin;
++        }
++
++        public CommandExecutor command() {
++            return command;
++        }
++
++        public CommandEntry commandEntry() {
++            return commandEntry;
++        }
++
++        public boolean active() {
++            return active;
++        }
++
++        public void active(boolean active) {
++            this.active = active;
++        }
++
++    }
++
++}
+diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
+index 683b5d78f9e3dc34e40c54683f64be32317797ac..8e97f3bc33f439387768ac42796292c43c5d2ad4 100644
+--- a/src/main/java/net/minecraft/server/players/PlayerList.java
++++ b/src/main/java/net/minecraft/server/players/PlayerList.java
+@@ -335,6 +335,18 @@ public abstract class PlayerList {
+         // Ensure that player inventory is populated with its viewer
+         player.containerMenu.transferTo(player.containerMenu, bukkitPlayer);
+ 
++        // Raper start
++        // If the server has no proxy
++        var core = de.network.systems.core.Network.core();
++        if(!core.configuration().hasProxy()) {
++            java.util.concurrent.CompletableFuture.runAsync(() -> {
++                de.network.systems.core.player.OfflineNetworkPlayer networkPlayer = new de.network.systems.core.paper.player.OfflinePlayer(bukkitPlayer.getUniqueId(), bukkitPlayer.getName());
++                core.database().writeNameAndUuid(networkPlayer);
++                core.cache().pushPlayer(networkPlayer);
++            }, de.network.systems.core.Network.EXECUTOR_SERVICE);
++        }
++        // Raper end
++
+         PlayerJoinEvent playerJoinEvent = new PlayerJoinEvent(bukkitPlayer, PaperAdventure.asAdventure(ichatmutablecomponent)); // Paper - Adventure
+         this.cserver.getPluginManager().callEvent(playerJoinEvent);
+ 
+@@ -595,6 +607,15 @@ public abstract class PlayerList {
+             entityplayer.closeContainer(org.bukkit.event.inventory.InventoryCloseEvent.Reason.DISCONNECT); // Paper
+         }
+ 
++        // Raper start
++        // If the server has no proxy
++        CraftPlayer craftPlayer = entityplayer.getBukkitEntity();
++        var core = de.network.systems.core.Network.core();
++        if(!core.configuration().hasProxy()) {
++            core.cache().removePlayer(new de.network.systems.core.paper.player.OfflinePlayer(craftPlayer.getUniqueId(), craftPlayer.getName()));
++        }
++        // Raper end
++
+         PlayerQuitEvent playerQuitEvent = new PlayerQuitEvent(entityplayer.getBukkitEntity(), leaveMessage, entityplayer.quitReason); // Paper - Adventure & quit reason
+         this.cserver.getPluginManager().callEvent(playerQuitEvent);
+         entityplayer.getBukkitEntity().disconnect(playerQuitEvent.getQuitMessage());
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftOfflinePlayer.java b/src/main/java/org/bukkit/craftbukkit/CraftOfflinePlayer.java
+index 714afc98b5150907b45a00060be4e41582333204..9cf758f30303dd35d09bc9d216c41f1c64e31c50 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftOfflinePlayer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftOfflinePlayer.java
+@@ -30,13 +30,14 @@ import org.bukkit.plugin.Plugin;
+ import org.bukkit.profile.PlayerProfile;
+ 
+ @SerializableAs("Player")
+-public class CraftOfflinePlayer implements OfflinePlayer, ConfigurationSerializable {
++public class CraftOfflinePlayer extends de.network.systems.core.paper.player.OfflinePlayer implements OfflinePlayer, ConfigurationSerializable {
+     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger(); // Paper
+     private final GameProfile profile;
+     private final CraftServer server;
+     private final PlayerDataStorage storage;
+ 
+     protected CraftOfflinePlayer(CraftServer server, GameProfile profile) {
++        super(profile.getId(), profile.getName()); // Raper
+         this.server = server;
+         this.profile = profile;
+         this.storage = server.console.playerDataStorage;
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 8c5e7cb371fd5d70132e57b1fbfcd04d8ab8c572..68fc17d7564e57861cee404391d2ab9d4045483d 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -261,7 +261,17 @@ import net.md_5.bungee.api.chat.BaseComponent; // Spigot
+ import javax.annotation.Nullable; // Paper
+ import javax.annotation.Nonnull; // Paper
+ 
+-public final class CraftServer implements Server {
++public final class CraftServer implements Server, de.network.systems.core.NetworkCore {
++
++    // Raper start
++    private final de.network.systems.core.NetworkCore.CoreConfiguration coreConfiguration;
++    private final de.network.systems.core.paper.player.PlayerManager playerManager = new de.network.systems.core.paper.player.PlayerManager(this);
++    private final de.network.systems.core.language.translation.NetworkTranslator translator = new de.network.systems.core.language.translation.NetworkTranslator() {};
++
++    private final de.network.systems.core.database.NetworkDatabase database;
++    private final de.network.systems.core.database.NetworkCache cache;
++    // Raper end
++
+     private final String serverName = "Raper"; // Raper
+     private final String serverVersion;
+     private final String bukkitVersion = Versioning.getBukkitVersion();
+@@ -323,6 +333,36 @@ public final class CraftServer implements Server {
+         this.structureManager = new CraftStructureManager(console.getStructureManager());
+         this.dataPackManager = new CraftDataPackManager(this.getServer().getPackRepository());
+ 
++        // Raper start
++        de.network.systems.core.Network.init(this);
++        {
++            this.coreConfiguration = de.network.systems.core.NetworkCore.CoreConfiguration.load(config("general", de.network.systems.core.classes.configs.Configs.defaultGeneral()));
++        }
++
++        // Load translations
++        {
++            int amount = this.translator.load();
++            info("Loaded " + amount + " translations");
++        }
++
++        // Create database
++        {
++            de.network.systems.core.database.NetworkDatabase networkDatabase = null;
++            try {
++                networkDatabase = de.network.systems.core.paper.database.Database.createDatabase(config("database", de.network.systems.core.classes.configs.Configs.defaultDatabase()));
++            } catch (Throwable throwable) {
++                fatal("Core crash! Failed to create database", throwable);
++                shutdown();
++            }
++            this.database = networkDatabase;
++        }
++
++        // Create cache
++        {
++            this.cache = de.network.systems.core.paper.database.Cache.createCache(config("cache", de.network.systems.core.classes.configs.Configs.defaultCache()));
++        }
++        // Raper end
++
+         Bukkit.setServer(this);
+ 
+         // Register all the Enchantments and PotionTypes now so we can stop new registration immediately after
+@@ -2972,4 +3012,137 @@ public final class CraftServer implements Server {
+     }
+ 
+     // Paper end
++    // Raper start
++    @Override
++    public Object server() {
++        return this;
++    }
++
++    @Override
++    public de.network.systems.core.NetworkCore.CoreConfiguration configuration() {
++        return this.coreConfiguration;
++    }
++
++    @Override
++    public de.network.systems.core.utils.NetworkUtils utils() {
++        return de.network.systems.core.paper.utils.RegisterUtils.UTILS;
++    }
++
++    @Override
++    public de.network.systems.core.player.systems.NetworkPlayerManager playerManager() {
++        return this.playerManager;
++    }
++
++    @Override
++    public de.network.systems.core.language.translation.NetworkTranslator translator() {
++        return this.translator;
++    }
++
++    @Override
++    public de.network.systems.core.database.NetworkDatabase database() {
++        return this.database;
++    }
++
++    @Override
++    public de.network.systems.core.database.NetworkCache cache() {
++        return this.cache;
++    }
++
++    @Override
++    public de.network.systems.core.player.NetworkPlayer player(UUID uniqueId) {
++        return this.playerManager.player(uniqueId);
++    }
++
++    @Override
++    @Deprecated
++    public de.network.systems.core.player.NetworkPlayer player(String username) {
++        return this.playerManager.player(username);
++    }
++
++    @Override
++    public java.util.Collection<de.network.systems.core.player.NetworkPlayer> players() {
++        return this.playerManager.players();
++    }
++
++    @Override
++    public java.util.concurrent.CompletableFuture<de.network.systems.core.player.OfflineNetworkPlayer> offlinePlayer(UUID uuid) {
++        return this.playerManager.offlinePlayer(uuid);
++    }
++
++    @Override
++    public java.util.concurrent.CompletableFuture<de.network.systems.core.player.OfflineNetworkPlayer> offlinePlayer(String name) {
++        return this.playerManager.offlinePlayer(name);
++    }
++
++    @org.jetbrains.annotations.Contract("_, _ -> new")
++    @Override
++    public de.network.systems.core.player.@org.jetbrains.annotations.NotNull OfflineNetworkPlayer createOffline(UUID uuid, String name) {
++        return new de.network.systems.core.paper.player.OfflinePlayer(uuid, name);
++    }
++
++    @Override
++    public void info(String message) {
++        this.logger.info("[info] " + message);
++    }
++
++    @Override
++    public void dev(String message, Object... replacer) {
++        message = "[dev] " + String.format(message, replacer);
++        this.logger.info(message);
++        if(de.network.systems.core.Network.DEBUG) {
++            for (CraftPlayer player : getOnlinePlayers()) {
++                player.sendMessage(net.kyori.adventure.text.Component.textOfChildren(COMPONENT_PREFIX, net.kyori.adventure.text.Component.text(message)));
++            }
++        }
++    }
++
++    @Override
++    public void warn(String message) {
++        this.logger.warning("[warn] " + message);
++    }
++
++    @Override
++    public void error(String message) {
++        error(message, new de.network.systems.core.throwables.UnknownCauseException());
++    }
++
++    @Override
++    public void error(String message, @org.jetbrains.annotations.NotNull Throwable cause, Thread thread) {
++        this.logger.severe("[error](" + cause.getClass().getSimpleName() + ") " + message);
++        this.logger.severe("[error/stacktrace](" + cause.getClass().getSimpleName() + ") " + com.google.common.base.Throwables.getStackTraceAsString(cause));
++
++        java.util.concurrent.CompletableFuture.runAsync(() -> {
++            try {
++                Optional<de.network.systems.core.classes.discord.DiscordWebhook> hook = errorHook(message, "Error", UUID.randomUUID(), cause, thread);
++                if (hook.isPresent()) {
++                    hook.get().execute();
++                }
++            } catch (Throwable throwable) {
++                throwable.printStackTrace();
++            }
++        }, de.network.systems.core.Network.EXECUTOR_SERVICE);
++    }
++
++    @Override
++    public void fatal(String message, @org.jetbrains.annotations.NotNull Throwable cause, Thread thread) {
++        this.logger.severe("[fatal](" + cause.getClass().getSimpleName() + ") " + message);
++        this.logger.severe("[fatal/stacktrace](" + cause.getClass().getSimpleName() + ") " + com.google.common.base.Throwables.getStackTraceAsString(cause));
++
++        java.util.concurrent.CompletableFuture.runAsync(() -> {
++            try {
++                Optional<de.network.systems.core.classes.discord.DiscordWebhook> hook = errorHook(message, "Fatal error", UUID.randomUUID(), cause, thread);
++                if (hook.isPresent()) {
++                    hook.get().execute();
++                }
++            } catch (Throwable throwable) {
++                throwable.printStackTrace();
++            }
++        }, de.network.systems.core.Network.EXECUTOR_SERVICE);
++    }
++
++    @Override
++    public void handleException(Thread thread, Throwable throwable) {
++        error("An error occurred in the core: " + throwable.getClass().getSimpleName() + ": " + throwable.getMessage(), throwable);
++    }
++    // Raper end
+ }
+diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
+index 717e292040ed7779eb4b6c5fa26665d3df9024e7..ce21782145a6c0e2f3fab486427cb7889c365cc9 100644
+--- a/src/main/java/org/bukkit/craftbukkit/Main.java
++++ b/src/main/java/org/bukkit/craftbukkit/Main.java
+@@ -312,6 +312,7 @@ public class Main {
+                 }
+                 // Paper end
+                 System.setProperty( "library.jansi.version", "Paper" ); // Paper - set meaningless jansi version to prevent git builds from crashing on Windows
++                System.out.println("This server is running the core"); // Raper
+                 System.out.println("Loading libraries, please wait...");
+                 net.minecraft.server.Main.main(options);
+             } catch (Throwable t) {
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+index 548eddde8b0558b780f672d321507cfcbac92558..7bf673080fae22accc291012b99eee81463dae1a 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+@@ -166,6 +166,15 @@ import net.md_5.bungee.api.chat.BaseComponent; // Spigot
+ 
+ @DelegateDeserialization(CraftOfflinePlayer.class)
+ public class CraftPlayer extends CraftHumanEntity implements Player {
++
++    // Raper start
++    private final HashMap<de.network.systems.core.player.data.DataProperty<?>, Object> cachedProperties = new HashMap<>();
++    private final HashMap<de.network.systems.core.player.data.Setting<?>, Object> cachedSettings = new HashMap<>();
++    private final HashMap<de.network.systems.core.player.data.Product<?>, Object> cachedProducts = new HashMap<>();
++
++    private final List<de.network.systems.core.player.NetworkPlayer.StoredData> localStorage = new ArrayList<>();
++    // Raper end
++
+     private long firstPlayed = 0;
+     private long lastPlayed = 0;
+     private boolean hasPlayedBefore = false;
+@@ -3144,4 +3153,235 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+         return this.spigot;
+     }
+     // Spigot end
++
++    // Raper start
++    @Override
++    public Object software() {
++        return this;
++    }
++
++    @Override
++    public void message(net.kyori.adventure.text.Component component) {
++        sendMessage(component);
++    }
++
++    @Override
++    public void message(net.kyori.adventure.text.Component @NotNull ... components) {
++        for (net.kyori.adventure.text.Component component : components) {
++            message(component);
++        }
++    }
++
++    @Override
++    public void actionBar(net.kyori.adventure.text.Component component) {
++        sendActionBar(component);
++    }
++
++    @Override
++    public void message(de.network.systems.core.language.translation.NetworkTranslation.KeyProvider keyProvider, net.kyori.adventure.text.minimessage.tag.resolver.TagResolver... tagResolvers) {
++        message(net.kyori.adventure.text.Component.empty(), keyProvider, tagResolvers);
++    }
++
++    @Override
++    public void message(net.kyori.adventure.text.Component prefix, de.network.systems.core.language.translation.NetworkTranslation.KeyProvider keyProvider, net.kyori.adventure.text.minimessage.tag.resolver.TagResolver... tagResolvers) {
++        de.network.systems.core.language.translation.NetworkTranslator.get().translate0(this, keyProvider, tagResolvers).thenAccept(component -> sendMessage(net.kyori.adventure.text.Component.textOfChildren(prefix, component)));
++    }
++
++    @Override
++    public void actionBar(de.network.systems.core.language.translation.NetworkTranslation.KeyProvider keyProvider, net.kyori.adventure.text.minimessage.tag.resolver.TagResolver... tagResolvers) {
++        actionBar(net.kyori.adventure.text.Component.empty(), keyProvider, tagResolvers);
++    }
++
++    @Override
++    public void actionBar(net.kyori.adventure.text.Component prefix, de.network.systems.core.language.translation.NetworkTranslation.KeyProvider keyProvider, net.kyori.adventure.text.minimessage.tag.resolver.TagResolver... tagResolvers) {
++        de.network.systems.core.language.translation.NetworkTranslator.get().translate0(this, keyProvider, tagResolvers).thenAccept(component -> sendActionBar(net.kyori.adventure.text.Component.textOfChildren(prefix, component)));
++    }
++
++    @Override
++    public void storeData(de.network.systems.core.database.NamespaceKey key, Object value) {
++        localStorage.add(new StoredData(key, value));
++    }
++
++    @Override
++    public void removeData(de.network.systems.core.database.NamespaceKey key) {
++        localStorage.removeIf(storedData -> storedData.key.is(key));
++    }
++
++    @Override
++    public Optional<StoredData> readData(de.network.systems.core.database.NamespaceKey key) {
++        return localStorage.stream().filter(item -> item.key.is(key)).findFirst();
++    }
++
++    @Override
++    public boolean hasData(de.network.systems.core.database.NamespaceKey key) {
++        return localStorage.stream().anyMatch(item -> item.key.is(key));
++    }
++
++    @Override
++    public de.network.systems.core.player.NetworkPlayer online() {
++        return this;
++    }
++
++    @Override
++    public <T> java.util.concurrent.CompletableFuture<de.network.systems.core.player.money.Transaction.Result<T>> executeTransaction(de.network.systems.core.player.money.Transaction<T> transaction) {
++        return requestProperty(de.network.systems.core.player.data.DataProperty.MONEY_PROPERTY, null, true).thenApply(currentMoney -> {
++            if (currentMoney < transaction.amount()) {
++                return new de.network.systems.core.player.money.Transaction.Result<>(transaction, de.network.systems.core.player.money.Transaction.ResultType.FAILED, new de.network.systems.core.player.money.Transaction.Payload.NotEnoughMoney(transaction.amount() - currentMoney));
++            }
++            currentMoney -= transaction.amount();
++            de.network.systems.core.player.data.Product<T> product = transaction.product();
++
++            writeProperty(de.network.systems.core.player.data.DataProperty.MONEY_PROPERTY, currentMoney);
++            writeProduct(product, de.network.systems.core.player.data.Product.ProductState.unlocked(product.defaultValue().value()));
++            // TODO: Log the transaction
++
++            return new de.network.systems.core.player.money.Transaction.Result<>(transaction, de.network.systems.core.player.money.Transaction.ResultType.SUCCESSFUL, new de.network.systems.core.player.money.Transaction.Payload.MoneyLeft(currentMoney));
++        });
++    }
++
++    @Override
++    public <T> java.util.concurrent.CompletableFuture<T> requestSetting(de.network.systems.core.player.data.Setting<T> setting) {
++        return requestSetting(setting, null, false);
++    }
++
++    @Override
++    public <T> java.util.concurrent.CompletableFuture<T> requestSetting(de.network.systems.core.player.data.Setting<T> setting, T defaultValue, boolean forceUpdate) {
++        return java.util.concurrent.CompletableFuture.supplyAsync(() -> syncRequestSetting(setting, defaultValue, forceUpdate), de.network.systems.core.Network.EXECUTOR_SERVICE);
++    }
++
++    @Override
++    public <T> T syncRequestSetting(de.network.systems.core.player.data.Setting<T> setting) {
++        return syncRequestSetting(setting, null, false);
++    }
++
++    @Override
++    @SuppressWarnings("unchecked")
++    public <T> T syncRequestSetting(de.network.systems.core.player.data.Setting<T> setting, T defaultValue, boolean forceUpdate) {
++        if (this.cachedSettings.containsKey(setting) && !forceUpdate) {
++            return (T) this.cachedSettings.get(setting);
++        } else {
++            T value = de.network.systems.core.Network.core().database().requestSetting(this, setting, defaultValue);
++            this.cachedSettings.put(setting, value);
++            return value;
++        }
++    }
++
++    @Override
++    public <T> java.util.concurrent.CompletableFuture<T> writeSetting(de.network.systems.core.player.data.Setting<T> setting, T value) {
++        return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
++            de.network.systems.core.Network.core().database().writeSetting(this, setting, value);
++            if (this.cachedSettings.containsKey(setting)) {
++                this.cachedSettings.replace(setting, value);
++            } else {
++                this.cachedSettings.put(setting, value);
++            }
++            return value;
++        }, de.network.systems.core.Network.EXECUTOR_SERVICE);
++    }
++
++    @Override
++    public <T> java.util.concurrent.CompletableFuture<T> requestProperty(de.network.systems.core.player.data.DataProperty<T> property) {
++        return requestProperty(property, null, false);
++    }
++
++    @Override
++    public <T> java.util.concurrent.CompletableFuture<T> requestProperty(de.network.systems.core.player.data.DataProperty<T> property, T defaultValue, boolean forceUpdate) {
++        return java.util.concurrent.CompletableFuture.supplyAsync(() -> syncRequestProperty(property, defaultValue, forceUpdate), de.network.systems.core.Network.EXECUTOR_SERVICE);
++    }
++
++    @Override
++    public <T> T syncRequestProperty(de.network.systems.core.player.data.DataProperty<T> property) {
++        return syncRequestProperty(property, null, false);
++    }
++
++    @Override
++    @SuppressWarnings("unchecked")
++    public <T> T syncRequestProperty(de.network.systems.core.player.data.DataProperty<T> property, T defaultValue, boolean forceUpdate) {
++        if (this.cachedProperties.containsKey(property) && !forceUpdate) {
++            return (T) this.cachedProperties.get(property);
++        } else {
++            T value = de.network.systems.core.Network.core().database().requestProperty(this, property, defaultValue);
++            this.cachedProperties.put(property, value);
++            return value;
++        }
++    }
++
++    @Override
++    public <T> java.util.concurrent.CompletableFuture<T> writeProperty(de.network.systems.core.player.data.DataProperty<T> property, T value) {
++        return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
++            de.network.systems.core.Network.core().database().writeProperty(this, property, value);
++            if (this.cachedProperties.containsKey(property)) {
++                this.cachedProperties.replace(property, value);
++            } else {
++                this.cachedProperties.put(property, value);
++            }
++            return value;
++        }, de.network.systems.core.Network.EXECUTOR_SERVICE);
++    }
++
++    @Override
++    public <T> java.util.concurrent.CompletableFuture<de.network.systems.core.player.data.Product.ProductState<T>> requestProduct(de.network.systems.core.player.data.Product<T> product) {
++        return requestProduct(product, null, false);
++    }
++
++    @Override
++    public <T> java.util.concurrent.CompletableFuture<de.network.systems.core.player.data.Product.ProductState<T>> requestProduct(de.network.systems.core.player.data.Product<T> product, de.network.systems.core.player.data.Product.ProductState<T> defaultValue, boolean forceUpdate) {
++        return java.util.concurrent.CompletableFuture.supplyAsync(() -> syncRequestProduct(product, defaultValue, forceUpdate), de.network.systems.core.Network.EXECUTOR_SERVICE);
++    }
++
++    @Override
++    public <T> de.network.systems.core.player.data.Product.ProductState<T> syncRequestProduct(de.network.systems.core.player.data.Product<T> product) {
++        return syncRequestProduct(product, null, false);
++    }
++
++    @Override
++    @SuppressWarnings("unchecked")
++    public <T> de.network.systems.core.player.data.Product.ProductState<T> syncRequestProduct(de.network.systems.core.player.data.Product<T> product, de.network.systems.core.player.data.Product.ProductState<T> defaultValue, boolean forceUpdate) {
++        if (this.cachedProducts.containsKey(product) && !forceUpdate) {
++            return (de.network.systems.core.player.data.Product.ProductState<T>) this.cachedProducts.get(product);
++        } else {
++            de.network.systems.core.player.data.Product.ProductState<T> value = de.network.systems.core.Network.core().database().requestProduct(this, product, defaultValue);
++            this.cachedProducts.put(product, value);
++            return value;
++        }
++    }
++
++    @Override
++    public <T> java.util.concurrent.CompletableFuture<de.network.systems.core.player.data.Product.ProductState<T>> writeProduct(de.network.systems.core.player.data.Product<T> product, de.network.systems.core.player.data.Product.ProductState<T> value) {
++        return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
++            de.network.systems.core.Network.core().database().writeProduct(this, product, value);
++            if (this.cachedProducts.containsKey(product)) {
++                this.cachedProducts.replace(product, value);
++            } else {
++                this.cachedProducts.put(product, value);
++            }
++            return value;
++        }, de.network.systems.core.Network.EXECUTOR_SERVICE);
++    }
++
++    @Override
++    public java.util.concurrent.CompletableFuture<de.network.systems.core.language.Language> language() {
++        return requestProperty(de.network.systems.core.player.data.DataProperty.LANGUAGE_PROPERTY);
++    }
++
++    @Override
++    public de.network.systems.core.language.Language syncLanguage() {
++        return syncRequestProperty(de.network.systems.core.player.data.DataProperty.LANGUAGE_PROPERTY);
++    }
++
++    @Override
++    public String asString() {
++        return username() + ":" + uniqueId().toString();
++    }
++
++    @Override
++    public UUID uniqueId() {
++        return getUniqueId();
++    }
++
++    @Override
++    public String username() {
++        return getName();
++    }
++    // Raper end
+ }

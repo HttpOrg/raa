@@ -8,6 +8,7 @@ plugins {
 }
 
 val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
+val raperMavenPublicUrl = "https://repo.kienitz.link/releases/"
 
 repositories {
     mavenCentral()
@@ -48,6 +49,7 @@ subprojects {
     repositories {
         mavenCentral()
         maven(paperMavenPublicUrl)
+        maven(raperMavenPublicUrl)
     }
 }
 

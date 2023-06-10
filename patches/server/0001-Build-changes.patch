@@ -5,7 +5,7 @@ Subject: [PATCH] Build changes
 
 
 diff --git a/build.gradle.kts b/build.gradle.kts
-index e7a03ea1dab56e7725f718da0b44c736018ac995..893be8f3af67e671a1b4c83b0c3d69d65dba539c 100644
+index e7a03ea1dab56e7725f718da0b44c736018ac995..7f2d816340d59120a82aa335c72ec3aa2ccbdeb7 100644
 --- a/build.gradle.kts
 +++ b/build.gradle.kts
 @@ -7,8 +7,12 @@ plugins {
@@ -42,7 +42,7 @@ index e7a03ea1dab56e7725f718da0b44c736018ac995..893be8f3af67e671a1b4c83b0c3d69d6
      standardInput = System.`in`
      workingDir = rootProject.layout.projectDirectory
 diff --git a/src/main/java/com/destroystokyo/paper/Metrics.java b/src/main/java/com/destroystokyo/paper/Metrics.java
-index 4b002e8b75d117b726b0de274a76d3596fce015b..0c17f2781258458f0a24d3da2b398e743c0d2672 100644
+index 4b002e8b75d117b726b0de274a76d3596fce015b..57fa3fd6fda1a718f51da3f6b3e32391467146f8 100644
 --- a/src/main/java/com/destroystokyo/paper/Metrics.java
 +++ b/src/main/java/com/destroystokyo/paper/Metrics.java
 @@ -593,7 +593,7 @@ public class Metrics {
@@ -64,7 +64,7 @@ index 4b002e8b75d117b726b0de274a76d3596fce015b..0c17f2781258458f0a24d3da2b398e74
                  metrics.addCustomChart(new Metrics.DrilldownPie("java_version", () -> {
                      Map<String, Map<String, Integer>> map = new HashMap<>();
 diff --git a/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java b/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
-index 9d687da5bdf398bb3f6c84cdf1249a7213d09f2e..2c8b0627f3f7d319d85a1a00a7e14f73e8a7632b 100644
+index 9d687da5bdf398bb3f6c84cdf1249a7213d09f2e..d0a264d4dcbe4ae6839a6ac8289c113ec510207e 100644
 --- a/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
 +++ b/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
 @@ -31,7 +31,7 @@ public class PaperVersionFetcher implements VersionFetcher {
@@ -90,7 +90,7 @@ index fb82bb52f219e7683fe1d3c0fb3acbe2251de8d4..bc2fdd44db39a09051fce6c6c9180dd6
  
      public SystemReport fillSystemReport(SystemReport details) {
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index ffa27c9c02dc4d12411fc089de3af8e8e12ba06e..845acc9bb537b02a597dd75c357c37d01d9e2a3e 100644
+index ffa27c9c02dc4d12411fc089de3af8e8e12ba06e..8c5e7cb371fd5d70132e57b1fbfcd04d8ab8c572 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 @@ -262,7 +262,7 @@ import javax.annotation.Nullable; // Paper
@@ -103,7 +103,7 @@ index ffa27c9c02dc4d12411fc089de3af8e8e12ba06e..845acc9bb537b02a597dd75c357c37d0
      private final String bukkitVersion = Versioning.getBukkitVersion();
      private final Logger logger = Logger.getLogger("Minecraft");
 diff --git a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
-index 774556a62eb240da42e84db4502e2ed43495be17..ff64966313fad71a4c6c5c78f8d4c24eedd7f797 100644
+index 774556a62eb240da42e84db4502e2ed43495be17..1c17757abdcb6e99f22ac09765f99b668b7c6c45 100644
 --- a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
 +++ b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
 @@ -11,7 +11,7 @@ public final class Versioning {

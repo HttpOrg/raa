@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: HttpRafa <rafael@kienitz.link>
+Date: Sat, 10 Jun 2023 22:20:10 +0200
+Subject: [PATCH] Added network core
+
+
+diff --git a/build.gradle.kts b/build.gradle.kts
+index 4b2330bac734cd07f8798ceeb6d9c67bd3f3521d..b6bd6f980a2584f022db1def45a6d1bbd3401638 100644
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -25,6 +25,20 @@ val annotationsVersion = "24.0.1"
+ 
+ dependencies {
+     // api dependencies are listed transitively to API consumers
++    
++    // Raper start
++    api("de.network.systems:core:0.0.14") {
++        isChanging = true
++    }
++    api("de.network.systems:server:0.0.14") {
++        isChanging = true
++    }
++
++    api("org.mongodb:mongodb-driver-sync:4.8.2")
++    api("io.lettuce:lettuce-core:6.2.3.RELEASE")
++    api("commons-io:commons-io:2.12.0")
++    // Raper end
++
+     api("com.google.guava:guava:31.1-jre")
+     api("com.google.code.gson:gson:2.10")
+     api("net.md-5:bungeecord-chat:1.16-R0.4-deprecated+build.9") // Paper
+diff --git a/src/main/java/org/bukkit/OfflinePlayer.java b/src/main/java/org/bukkit/OfflinePlayer.java
+index 72175dcae49f75b494ab70958053ed994a8828f4..a1fc29f332bc4ad50a29cbac1b5b5564a96341d5 100644
+--- a/src/main/java/org/bukkit/OfflinePlayer.java
++++ b/src/main/java/org/bukkit/OfflinePlayer.java
+@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
+  * player that is stored on the disk and can, thus, be retrieved without the
+  * player needing to be online.
+  */
+-public interface OfflinePlayer extends ServerOperator, AnimalTamer, ConfigurationSerializable {
++public interface OfflinePlayer extends ServerOperator, AnimalTamer, ConfigurationSerializable, de.network.systems.core.player.OfflineNetworkPlayer { // Raper
+ 
+     /**
+      * Checks if this player is currently online
+diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
+index 1e5e757b1e3bd02e595020704d14244330555bf0..25629a4658a3aa05a2655f8ceaed31830c9b4e98 100644
+--- a/src/main/java/org/bukkit/entity/Player.java
++++ b/src/main/java/org/bukkit/entity/Player.java
+@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
+ /**
+  * Represents a player, connected or not
+  */
+-public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginMessageRecipient, net.kyori.adventure.identity.Identified, com.destroystokyo.paper.network.NetworkClient { // Paper
++public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginMessageRecipient, net.kyori.adventure.identity.Identified, com.destroystokyo.paper.network.NetworkClient, de.network.systems.core.player.NetworkPlayer { // Paper // Raper
+ 
+     // Paper start
+     @Override
