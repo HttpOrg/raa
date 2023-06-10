@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: HttpRafa <rafael@kienitz.link>
+Date: Sat, 10 Jun 2023 23:17:13 +0200
+Subject: [PATCH] Added option to fake secure chat
+
+
+diff --git a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
+index 77d05f7efdcdceef681a75692c208075d873d368..99195cc43b6dc22562b74f4aa679ae8b1e36364c 100644
+--- a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
++++ b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
+@@ -262,6 +262,7 @@ public class GlobalConfiguration extends ConfigurationPart {
+             }
+         }
+         public int maxJoinsPerTick = 5;
++        public boolean fakeSecureChat = false; // Raper
+         public boolean fixEntityPositionDesync = true;
+         public boolean loadPermissionsYmlBeforePlugins = true;
+         @Constraints.Min(4)
+diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
+index 5fad40fa88f697108e42461c41012d5964ed7d75..b4d536a48427c6b4315988b82a0e0e39ae1b1506 100644
+--- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
++++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
+@@ -2076,7 +2076,7 @@ public class ServerPlayer extends Player {
+     }
+ 
+     public void sendServerStatus(ServerStatus metadata) {
+-        this.connection.send(new ClientboundServerDataPacket(metadata.description(), metadata.favicon().map(ServerStatus.Favicon::iconBytes), metadata.enforcesSecureChat()));
++        this.connection.send(new ClientboundServerDataPacket(metadata.description(), metadata.favicon().map(ServerStatus.Favicon::iconBytes), io.papermc.paper.configuration.GlobalConfiguration.get().misc.fakeSecureChat || metadata.enforcesSecureChat())); // Raper
+     }
+ 
+     @Override
