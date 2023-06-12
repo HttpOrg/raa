@@ -1150,7 +1150,7 @@ index 717e292040ed7779eb4b6c5fa26665d3df9024e7..ce21782145a6c0e2f3fab486427cb788
                  net.minecraft.server.Main.main(options);
              } catch (Throwable t) {
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
-index 548eddde8b0558b780f672d321507cfcbac92558..7bf673080fae22accc291012b99eee81463dae1a 100644
+index e41f5417304f5b05fa7e2f6b6e1c0095e820f1cc..e6be759570fc92448801377cc243f49f75729aba 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
 @@ -166,6 +166,15 @@ import net.md_5.bungee.api.chat.BaseComponent; // Spigot
@@ -1169,7 +1169,7 @@ index 548eddde8b0558b780f672d321507cfcbac92558..7bf673080fae22accc291012b99eee81
      private long firstPlayed = 0;
      private long lastPlayed = 0;
      private boolean hasPlayedBefore = false;
-@@ -3144,4 +3153,235 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+@@ -3147,4 +3156,235 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
          return this.spigot;
      }
      // Spigot end
