@@ -43,15 +43,15 @@ index 72175dcae49f75b494ab70958053ed994a8828f4..a1fc29f332bc4ad50a29cbac1b5b5564
      /**
       * Checks if this player is currently online
 diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
-index 1e5e757b1e3bd02e595020704d14244330555bf0..25629a4658a3aa05a2655f8ceaed31830c9b4e98 100644
+index 4ee0eb177f6b5765a9d7263576bb36c8a8366979..082a076731baede9d2f44117102d051da5001105 100644
 --- a/src/main/java/org/bukkit/entity/Player.java
 +++ b/src/main/java/org/bukkit/entity/Player.java
 @@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
  /**
   * Represents a player, connected or not
   */
--public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginMessageRecipient, net.kyori.adventure.identity.Identified, com.destroystokyo.paper.network.NetworkClient { // Paper
-+public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginMessageRecipient, net.kyori.adventure.identity.Identified, com.destroystokyo.paper.network.NetworkClient, de.network.systems.core.player.NetworkPlayer { // Paper // Raper
+-public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginMessageRecipient, net.kyori.adventure.identity.Identified, net.kyori.adventure.bossbar.BossBarViewer, com.destroystokyo.paper.network.NetworkClient { // Paper
++public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginMessageRecipient, net.kyori.adventure.identity.Identified, net.kyori.adventure.bossbar.BossBarViewer, com.destroystokyo.paper.network.NetworkClient, de.network.systems.core.player.NetworkPlayer { // Raper
  
      // Paper start
      @Override

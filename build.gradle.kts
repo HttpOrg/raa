@@ -83,7 +83,7 @@ allprojects {
     publishing {
         repositories {
             /*maven("https://repo.papermc.io/repository/maven-snapshots/") { Change to own
-                name = "paperSnapshots"
+                name = "raperSnapshots"
                 credentials(PasswordCredentials::class)
             }*/
         }
@@ -110,7 +110,7 @@ tasks.register("printMinecraftVersion") {
     }
 }
 
-tasks.register("printPaperVersion") {
+tasks.register("printRaperVersion") {
     doLast {
         println(project.version)
     }
