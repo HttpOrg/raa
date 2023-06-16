@@ -8,7 +8,7 @@ plugins {
 }
 
 val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
-val raperMavenPublicUrl = "https://repo.kienitz.link/releases/"
+val raperMavenPublicUrl = "https://repo.rafa.run/repository/maven-public/"
 
 repositories {
     mavenCentral()
@@ -82,10 +82,10 @@ tasks.generateDevelopmentBundle {
 allprojects {
     publishing {
         repositories {
-            /*maven("https://repo.papermc.io/repository/maven-snapshots/") { Change to own
-                name = "raperSnapshots"
+            maven("https://repo.rafa.run/repository/maven-snapshots/") {
+                name = "rafaRepository"
                 credentials(PasswordCredentials::class)
-            }*/
+            }
         }
     }
 }
