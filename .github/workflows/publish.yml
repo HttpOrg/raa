@@ -49,29 +49,6 @@ jobs:
           name: raper-${{ steps.commit.outputs.short }}
           path: build/libs/raper-paperclip-*-reobf.jar
 
-      #- name: Download lastest cloudflared version
-      #  if: ${{ success() && github.repository == 'HttpOrg/raper' && github.ref_name == 'main' }}
-      #  shell: bash
-      #  working-directory: ${{ runner.temp }}
-      #  run: |
-      #    aria2c -x 16 https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
-      #    chmod +x cloudflared-linux-amd64
-      #    mkdir cloudflared
-      #    mv cloudflared-linux-amd64 ./cloudflared/cloudflared
-
-      #- name: Install cloudflared with tool cache
-      #  if: ${{ success() && github.repository == 'HttpOrg/raper' && github.ref_name == 'main' }}
-      #  uses: AnimMouse/tool-cache@main
-      #  with:
-      #    folder_name: cloudflared
-
-      #- name: Start cloudflared in the background
-      #  if: ${{ success() && github.repository == 'HttpOrg/raper' && github.ref_name == 'main' }}
-      #  shell: bash
-      #  run: |
-      #    nohup cloudflared access ssh --hostname ssh0.rafa.run --url 127.0.0.1:8899 > ${RUNNER_TEMP}/cloudflared.log 2>&1 &
-      #    echo $! > ${RUNNER_TEMP}/cloudflared.pid
-
       - name: Publish to Downloads API
         if: success()
         shell: bash
@@ -94,10 +71,9 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i id_ecdsa $DOWNLOADS_USERNAME@192.168.0.15 ./handleBuild.sh $project $version $GITHUB_RUN_NUMBER $GITHUB_SHA
           rm id_ecdsa
 
-      #- name: Stop cloudflared
-      #  if: ${{ success() && github.repository == 'HttpOrg/raper' && github.ref_name == 'main' }}
-      #  shell: bash
-      #  working-directory: ${{ runner.temp }}
-      #  run: |
-      #    kill $(cat cloudflared.pid)
-      #    tail --pid=$(cat cloudflared.pid) -f /dev/null
+      - name: Publish to Maven Repository
+        if: success()
+        env:
+          ORG_GRADLE_PROJECT_rafaRepositoryUsername: ${{ secrets.REPO_USERNAME }}
+          ORG_GRADLE_PROJECT_rafaRepositoryPassword: ${{ secrets.REPO_PASSWORD }}
+        run: ./gradlew raper-api:publish --stacktrace

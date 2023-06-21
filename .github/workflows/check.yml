@@ -1,4 +1,4 @@
-name: "Build Raper"
+name: "Check Raper"
 on:
   push:
     paths-ignore:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    # Run if on main branch
+    # Run if not on main branch
     if: github.ref_name != 'main'
     runs-on: ubuntu-latest
     strategy:
