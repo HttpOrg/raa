@@ -82,7 +82,8 @@ tasks.generateDevelopmentBundle {
 allprojects {
     publishing {
         repositories {
-            maven("https://repo.rafa.run/repository/maven-snapshots/") {
+            maven(System.getenv("REPOSITORY_URL") ?: "https://repo.rafa.run/repository/maven-snapshots/") {
+                isAllowInsecureProtocol = true
                 name = "rafaRepository"
                 credentials(PasswordCredentials::class)
             }
