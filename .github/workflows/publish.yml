@@ -1,0 +1,103 @@
+name: "Publish Raper"
+on:
+  push:
+    paths-ignore:
+      - '.gitignore'
+      - '.editorconfig'
+      - 'README.md'
+      - 'PATCHES-LICENSE'
+
+jobs:
+  build:
+    # Run if on main branch
+    if: github.repository == 'HttpOrg/raper' && github.ref_name == 'main'
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        java: [17]
+      fail-fast: true
+    steps:
+      - uses: actions/checkout@v3
+
+      - id: commit
+        uses: pr-mpt/actions-commit-hash@v2
+
+      - name: JDK ${{ matrix.java }}
+        uses: actions/setup-java@v3.6.0
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: Apply Patches
+        run: |
+          git config --global user.email "no-reply@github.com"
+          git config --global user.name "Github Actions"
+          ./gradlew applyPatches --stacktrace
+
+      - name: Build
+        run: ./gradlew build --stacktrace
+
+      - name: Create Paperclip Jar
+        run: ./gradlew createReobfPaperclipJar --stacktrace
+
+      - name: Upload Paperclip Jar
+        uses: actions/upload-artifact@v3
+        with:
+          name: raper-${{ steps.commit.outputs.short }}
+          path: build/libs/raper-paperclip-*-reobf.jar
+
+      #- name: Download lastest cloudflared version
+      #  if: ${{ success() && github.repository == 'HttpOrg/raper' && github.ref_name == 'main' }}
+      #  shell: bash
+      #  working-directory: ${{ runner.temp }}
+      #  run: |
+      #    aria2c -x 16 https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+      #    chmod +x cloudflared-linux-amd64
+      #    mkdir cloudflared
+      #    mv cloudflared-linux-amd64 ./cloudflared/cloudflared
+
+      #- name: Install cloudflared with tool cache
+      #  if: ${{ success() && github.repository == 'HttpOrg/raper' && github.ref_name == 'main' }}
+      #  uses: AnimMouse/tool-cache@main
+      #  with:
+      #    folder_name: cloudflared
+
+      #- name: Start cloudflared in the background
+      #  if: ${{ success() && github.repository == 'HttpOrg/raper' && github.ref_name == 'main' }}
+      #  shell: bash
+      #  run: |
+      #    nohup cloudflared access ssh --hostname ssh0.rafa.run --url 127.0.0.1:8899 > ${RUNNER_TEMP}/cloudflared.log 2>&1 &
+      #    echo $! > ${RUNNER_TEMP}/cloudflared.pid
+
+      - name: Publish to Downloads API
+        if: success()
+        shell: bash
+        env:
+          DOWNLOADS_USERNAME: ${{ vars.DOWNLOADS_USERNAME }}
+          DOWNLOADS_PRIVATE_KEY: ${{ secrets.DOWNLOADS_PRIVATE_KEY }}
+        run: |
+          # Save the private key to a file
+          echo "$DOWNLOADS_PRIVATE_KEY" > id_ecdsa
+          chmod 600 id_ecdsa
+          # Set the project
+          project=raper
+          # Get the version from gradle.properties
+          version=$(cat gradle.properties | grep -o "mcVersion=[0-9\\.]*" | cut -d"=" -f2)
+          # Copy over artifacts
+          # scp -P 8899 -B -o StrictHostKeyChecking=no -i id_ecdsa build/libs/raper-paperclip-*-reobf.jar $DOWNLOADS_USERNAME@127.0.0.1:~/files/
+          scp -B -o StrictHostKeyChecking=no -i id_ecdsa build/libs/raper-paperclip-*-reobf.jar $DOWNLOADS_USERNAME@192.168.0.15:~/files/
+          # Run the build script
+          # ssh -p 8899 -o StrictHostKeyChecking=no -i id_ecdsa $DOWNLOADS_USERNAME@127.0.0.1 ./handleBuild.sh $project $version $GITHUB_RUN_NUMBER $GITHUB_SHA
+          ssh -o StrictHostKeyChecking=no -i id_ecdsa $DOWNLOADS_USERNAME@192.168.0.15 ./handleBuild.sh $project $version $GITHUB_RUN_NUMBER $GITHUB_SHA
+          rm id_ecdsa
+
+      #- name: Stop cloudflared
+      #  if: ${{ success() && github.repository == 'HttpOrg/raper' && github.ref_name == 'main' }}
+      #  shell: bash
+      #  working-directory: ${{ runner.temp }}
+      #  run: |
+      #    kill $(cat cloudflared.pid)
+      #    tail --pid=$(cat cloudflared.pid) -f /dev/null
