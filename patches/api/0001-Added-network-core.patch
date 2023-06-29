@@ -14,10 +14,10 @@ index 4b2330bac734cd07f8798ceeb6d9c67bd3f3521d..b6bd6f980a2584f022db1def45a6d1bb
      // api dependencies are listed transitively to API consumers
 +    
 +    // Raper start
-+    api("de.network.systems:core:0.0.14") {
++    api("de.network.systems:core:" + findProperty("networkVersion")) {
 +        isChanging = true
 +    }
-+    api("de.network.systems:server:0.0.14") {
++    api("de.network.systems:server:" + findProperty("networkVersion")) {
 +        isChanging = true
 +    }
 +
