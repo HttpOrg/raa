@@ -1145,7 +1145,7 @@ index 717e292040ed7779eb4b6c5fa26665d3df9024e7..ce21782145a6c0e2f3fab486427cb788
                  }
                  // Paper end
                  System.setProperty( "library.jansi.version", "Paper" ); // Paper - set meaningless jansi version to prevent git builds from crashing on Windows
-+                System.out.println("This server is running the core"); // Raa
++                System.out.println("This server is using: Network core version " + de.network.systems.core.Network.BUILD_INFO.version()); // Raa
                  System.out.println("Loading libraries, please wait...");
                  net.minecraft.server.Main.main(options);
              } catch (Throwable t) {
