@@ -888,7 +888,7 @@ index 683b5d78f9e3dc34e40c54683f64be32317797ac..8e97f3bc33f439387768ac42796292c4
          // Ensure that player inventory is populated with its viewer
          player.containerMenu.transferTo(player.containerMenu, bukkitPlayer);
  
-+        // Raper start
++        // Raa start
 +        // If the server has no proxy
 +        var core = de.network.systems.core.Network.core();
 +        if(!core.configuration().hasProxy()) {
@@ -898,7 +898,7 @@ index 683b5d78f9e3dc34e40c54683f64be32317797ac..8e97f3bc33f439387768ac42796292c4
 +                core.cache().pushPlayer(networkPlayer);
 +            }, de.network.systems.core.Network.EXECUTOR_SERVICE);
 +        }
-+        // Raper end
++        // Raa end
 +
          PlayerJoinEvent playerJoinEvent = new PlayerJoinEvent(bukkitPlayer, PaperAdventure.asAdventure(ichatmutablecomponent)); // Paper - Adventure
          this.cserver.getPluginManager().callEvent(playerJoinEvent);
@@ -907,14 +907,14 @@ index 683b5d78f9e3dc34e40c54683f64be32317797ac..8e97f3bc33f439387768ac42796292c4
              entityplayer.closeContainer(org.bukkit.event.inventory.InventoryCloseEvent.Reason.DISCONNECT); // Paper
          }
  
-+        // Raper start
++        // Raa start
 +        // If the server has no proxy
 +        CraftPlayer craftPlayer = entityplayer.getBukkitEntity();
 +        var core = de.network.systems.core.Network.core();
 +        if(!core.configuration().hasProxy()) {
 +            core.cache().removePlayer(new de.network.systems.core.paper.player.OfflinePlayer(craftPlayer.getUniqueId(), craftPlayer.getName()));
 +        }
-+        // Raper end
++        // Raa end
 +
          PlayerQuitEvent playerQuitEvent = new PlayerQuitEvent(entityplayer.getBukkitEntity(), leaveMessage, entityplayer.quitReason); // Paper - Adventure & quit reason
          this.cserver.getPluginManager().callEvent(playerQuitEvent);
@@ -935,7 +935,7 @@ index 714afc98b5150907b45a00060be4e41582333204..9cf758f30303dd35d09bc9d216c41f1c
      private final PlayerDataStorage storage;
  
      protected CraftOfflinePlayer(CraftServer server, GameProfile profile) {
-+        super(profile.getId(), profile.getName()); // Raper
++        super(profile.getId(), profile.getName()); // Raa
          this.server = server;
          this.profile = profile;
          this.storage = server.console.playerDataStorage;
@@ -950,23 +950,23 @@ index 8c5e7cb371fd5d70132e57b1fbfcd04d8ab8c572..68fc17d7564e57861cee404391d2ab9d
 -public final class CraftServer implements Server {
 +public final class CraftServer implements Server, de.network.systems.core.NetworkCore {
 +
-+    // Raper start
++    // Raa start
 +    private final de.network.systems.core.NetworkCore.CoreConfiguration coreConfiguration;
 +    private final de.network.systems.core.paper.player.PlayerManager playerManager = new de.network.systems.core.paper.player.PlayerManager(this);
 +    private final de.network.systems.core.language.translation.NetworkTranslator translator = new de.network.systems.core.language.translation.NetworkTranslator() {};
 +
 +    private final de.network.systems.core.database.NetworkDatabase database;
 +    private final de.network.systems.core.database.NetworkCache cache;
-+    // Raper end
++    // Raa end
 +
-     private final String serverName = "Raper"; // Raper
+     private final String serverName = "Raa"; // Raa
      private final String serverVersion;
      private final String bukkitVersion = Versioning.getBukkitVersion();
 @@ -323,6 +333,36 @@ public final class CraftServer implements Server {
          this.structureManager = new CraftStructureManager(console.getStructureManager());
          this.dataPackManager = new CraftDataPackManager(this.getServer().getPackRepository());
  
-+        // Raper start
++        // Raa start
 +        de.network.systems.core.Network.init(this);
 +        {
 +            this.coreConfiguration = de.network.systems.core.NetworkCore.CoreConfiguration.load(config("general", de.network.systems.core.classes.configs.Configs.defaultGeneral()));
@@ -994,7 +994,7 @@ index 8c5e7cb371fd5d70132e57b1fbfcd04d8ab8c572..68fc17d7564e57861cee404391d2ab9d
 +        {
 +            this.cache = de.network.systems.core.paper.database.Cache.createCache(config("cache", de.network.systems.core.classes.configs.Configs.defaultCache()));
 +        }
-+        // Raper end
++        // Raa end
 +
          Bukkit.setServer(this);
  
@@ -1003,7 +1003,7 @@ index 8c5e7cb371fd5d70132e57b1fbfcd04d8ab8c572..68fc17d7564e57861cee404391d2ab9d
      }
  
      // Paper end
-+    // Raper start
++    // Raa start
 +    @Override
 +    public Object server() {
 +        return this;
@@ -1135,7 +1135,7 @@ index 8c5e7cb371fd5d70132e57b1fbfcd04d8ab8c572..68fc17d7564e57861cee404391d2ab9d
 +    public void handleException(Thread thread, Throwable throwable) {
 +        error("An error occurred in the core: " + throwable.getClass().getSimpleName() + ": " + throwable.getMessage(), throwable);
 +    }
-+    // Raper end
++    // Raa end
  }
 diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
 index 717e292040ed7779eb4b6c5fa26665d3df9024e7..ce21782145a6c0e2f3fab486427cb7889c365cc9 100644
@@ -1145,7 +1145,7 @@ index 717e292040ed7779eb4b6c5fa26665d3df9024e7..ce21782145a6c0e2f3fab486427cb788
                  }
                  // Paper end
                  System.setProperty( "library.jansi.version", "Paper" ); // Paper - set meaningless jansi version to prevent git builds from crashing on Windows
-+                System.out.println("This server is running the core"); // Raper
++                System.out.println("This server is running the core"); // Raa
                  System.out.println("Loading libraries, please wait...");
                  net.minecraft.server.Main.main(options);
              } catch (Throwable t) {
@@ -1158,13 +1158,13 @@ index e41f5417304f5b05fa7e2f6b6e1c0095e820f1cc..e6be759570fc92448801377cc243f49f
  @DelegateDeserialization(CraftOfflinePlayer.class)
  public class CraftPlayer extends CraftHumanEntity implements Player {
 +
-+    // Raper start
++    // Raa start
 +    private final HashMap<de.network.systems.core.player.data.DataProperty<?>, Object> cachedProperties = new HashMap<>();
 +    private final HashMap<de.network.systems.core.player.data.Setting<?>, Object> cachedSettings = new HashMap<>();
 +    private final HashMap<de.network.systems.core.player.data.Product<?>, Object> cachedProducts = new HashMap<>();
 +
 +    private final List<de.network.systems.core.player.NetworkPlayer.StoredData> localStorage = new ArrayList<>();
-+    // Raper end
++    // Raa end
 +
      private long firstPlayed = 0;
      private long lastPlayed = 0;
@@ -1174,7 +1174,7 @@ index e41f5417304f5b05fa7e2f6b6e1c0095e820f1cc..e6be759570fc92448801377cc243f49f
      }
      // Spigot end
 +
-+    // Raper start
++    // Raa start
 +    @Override
 +    public Object software() {
 +        return this;
@@ -1403,5 +1403,5 @@ index e41f5417304f5b05fa7e2f6b6e1c0095e820f1cc..e6be759570fc92448801377cc243f49f
 +    public String username() {
 +        return getName();
 +    }
-+    // Raper end
++    // Raa end
  }

@@ -1,4 +1,4 @@
-name: "Check Raper"
+name: "Check Raa"
 on:
   push:
     paths-ignore:

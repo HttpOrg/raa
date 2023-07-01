@@ -46,7 +46,7 @@ out/
 # other stuff
 run/
 
-Raper-Server
-Raper-API
+Raa-Server
+Raa-API
 
 !gradle/wrapper/gradle-wrapper.jar

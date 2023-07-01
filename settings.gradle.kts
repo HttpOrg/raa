@@ -15,10 +15,10 @@ if (!file(".git").exists()) {
     val errorText = """
         
         =====================[ ERROR ]=====================
-         The Raper project directory is not a properly cloned Git repository.
+         The Raa project directory is not a properly cloned Git repository.
          
-         In order to build Raper from source you must clone
-         the Raper repository using Git, not download a code
+         In order to build Raa from source you must clone
+         the Raa repository using Git, not download a code
          zip from GitHub.
          
          See https://github.com/PaperMC/Paper/blob/master/CONTRIBUTING.md
@@ -28,9 +28,9 @@ if (!file(".git").exists()) {
     error(errorText)
 }
 
-rootProject.name = "raper"
+rootProject.name = "raa"
 
-for (name in listOf("Raper-API", "Raper-Server")) {
+for (name in listOf("Raa-API", "Raa-Server")) {
     val projName = name.lowercase(Locale.ENGLISH)
     include(projName)
     findProject(":$projName")!!.projectDir = file(name)

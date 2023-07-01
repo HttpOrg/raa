@@ -8,7 +8,7 @@ plugins {
 }
 
 val paperMavenPublicUrl = "https://repo.papermc.io/repository/maven-public/"
-val raperMavenPublicUrl = "https://repo.rafa.run/repository/maven-public/"
+val raaMavenPublicUrl = "https://repo.rafa.run/repository/maven-public/"
 
 repositories {
     mavenCentral()
@@ -49,12 +49,12 @@ subprojects {
     repositories {
         mavenCentral()
         maven(paperMavenPublicUrl)
-        maven(raperMavenPublicUrl)
+        maven(raaMavenPublicUrl)
     }
 }
 
 paperweight {
-    serverProject.set(project(":raper-server"))
+    serverProject.set(project(":raa-server"))
 
     remapRepo.set(paperMavenPublicUrl)
     decompileRepo.set(paperMavenPublicUrl)
@@ -62,16 +62,16 @@ paperweight {
     usePaperUpstream(providers.gradleProperty("paperRef")) {
         withPaperPatcher {
             apiPatchDir.set(layout.projectDirectory.dir("patches/api"))
-            apiOutputDir.set(layout.projectDirectory.dir("Raper-API"))
+            apiOutputDir.set(layout.projectDirectory.dir("Raa-API"))
 
             serverPatchDir.set(layout.projectDirectory.dir("patches/server"))
-            serverOutputDir.set(layout.projectDirectory.dir("Raper-Server"))
+            serverOutputDir.set(layout.projectDirectory.dir("Raa-Server"))
         }
     }
 }
 
 tasks.generateDevelopmentBundle {
-    apiCoordinates.set("de.network.raper:raper-api")
+    apiCoordinates.set("de.network.raa:raa-api")
     mojangApiCoordinates.set("io.papermc.paper:paper-mojangapi")
     libraryRepositories.addAll(
         "https://repo.maven.apache.org/maven2/",
@@ -111,7 +111,7 @@ tasks.register("printMinecraftVersion") {
     }
 }
 
-tasks.register("printRaperVersion") {
+tasks.register("printRaaVersion") {
     doLast {
         println(project.version)
     }

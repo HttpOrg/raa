@@ -13,7 +13,7 @@ index 4b2330bac734cd07f8798ceeb6d9c67bd3f3521d..b6bd6f980a2584f022db1def45a6d1bb
  dependencies {
      // api dependencies are listed transitively to API consumers
 +    
-+    // Raper start
++    // Raa start
 +    api("de.network.systems:core:" + findProperty("networkVersion")) {
 +        isChanging = true
 +    }
@@ -24,7 +24,7 @@ index 4b2330bac734cd07f8798ceeb6d9c67bd3f3521d..b6bd6f980a2584f022db1def45a6d1bb
 +    api("org.mongodb:mongodb-driver-sync:4.8.2")
 +    api("io.lettuce:lettuce-core:6.2.3.RELEASE")
 +    api("commons-io:commons-io:2.12.0")
-+    // Raper end
++    // Raa end
 +
      api("com.google.guava:guava:31.1-jre")
      api("com.google.code.gson:gson:2.10")
@@ -38,7 +38,7 @@ index 72175dcae49f75b494ab70958053ed994a8828f4..a1fc29f332bc4ad50a29cbac1b5b5564
   * player needing to be online.
   */
 -public interface OfflinePlayer extends ServerOperator, AnimalTamer, ConfigurationSerializable {
-+public interface OfflinePlayer extends ServerOperator, AnimalTamer, ConfigurationSerializable, de.network.systems.core.player.OfflineNetworkPlayer { // Raper
++public interface OfflinePlayer extends ServerOperator, AnimalTamer, ConfigurationSerializable, de.network.systems.core.player.OfflineNetworkPlayer { // Raa
  
      /**
       * Checks if this player is currently online
@@ -51,7 +51,7 @@ index 4ee0eb177f6b5765a9d7263576bb36c8a8366979..082a076731baede9d2f44117102d051d
   * Represents a player, connected or not
   */
 -public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginMessageRecipient, net.kyori.adventure.identity.Identified, net.kyori.adventure.bossbar.BossBarViewer, com.destroystokyo.paper.network.NetworkClient { // Paper
-+public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginMessageRecipient, net.kyori.adventure.identity.Identified, net.kyori.adventure.bossbar.BossBarViewer, com.destroystokyo.paper.network.NetworkClient, de.network.systems.core.player.NetworkPlayer { // Raper
++public interface Player extends HumanEntity, Conversable, OfflinePlayer, PluginMessageRecipient, net.kyori.adventure.identity.Identified, net.kyori.adventure.bossbar.BossBarViewer, com.destroystokyo.paper.network.NetworkClient, de.network.systems.core.player.NetworkPlayer { // Raa
  
      // Paper start
      @Override
