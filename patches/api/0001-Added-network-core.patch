@@ -5,10 +5,10 @@ Subject: [PATCH] Added network core
 
 
 diff --git a/build.gradle.kts b/build.gradle.kts
-index 4b2330bac734cd07f8798ceeb6d9c67bd3f3521d..b6bd6f980a2584f022db1def45a6d1bbd3401638 100644
+index 149f9088fe806467656e8b1c4157df60fda69ba7..c2b65c396293f84ba46645c857e4e7a7cf8e5e77 100644
 --- a/build.gradle.kts
 +++ b/build.gradle.kts
-@@ -25,6 +25,20 @@ val annotationsVersion = "24.0.1"
+@@ -27,6 +27,20 @@ val annotationsVersion = "24.0.1"
  
  dependencies {
      // api dependencies are listed transitively to API consumers
@@ -30,7 +30,7 @@ index 4b2330bac734cd07f8798ceeb6d9c67bd3f3521d..b6bd6f980a2584f022db1def45a6d1bb
      api("com.google.code.gson:gson:2.10")
      api("net.md-5:bungeecord-chat:1.16-R0.4-deprecated+build.9") // Paper
 diff --git a/src/main/java/org/bukkit/OfflinePlayer.java b/src/main/java/org/bukkit/OfflinePlayer.java
-index 72175dcae49f75b494ab70958053ed994a8828f4..a1fc29f332bc4ad50a29cbac1b5b5564a96341d5 100644
+index 72175dcae49f75b494ab70958053ed994a8828f4..4e4d3d5e7f2fb3751e9197054bfd23e15239f182 100644
 --- a/src/main/java/org/bukkit/OfflinePlayer.java
 +++ b/src/main/java/org/bukkit/OfflinePlayer.java
 @@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
@@ -43,10 +43,10 @@ index 72175dcae49f75b494ab70958053ed994a8828f4..a1fc29f332bc4ad50a29cbac1b5b5564
      /**
       * Checks if this player is currently online
 diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
-index 4ee0eb177f6b5765a9d7263576bb36c8a8366979..082a076731baede9d2f44117102d051da5001105 100644
+index 0b4f9dee48f8d49977dc9a5f104ee062ca2cbfae..df52e8a0ab2887b9504d3514ffcaff7b26aaf752 100644
 --- a/src/main/java/org/bukkit/entity/Player.java
 +++ b/src/main/java/org/bukkit/entity/Player.java
-@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
+@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
  /**
   * Represents a player, connected or not
   */

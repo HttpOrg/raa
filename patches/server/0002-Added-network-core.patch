@@ -881,7 +881,7 @@ index 0000000000000000000000000000000000000000..f24b65a4190f2ac1d85c5def18d6869b
 +
 +}
 diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
-index 683b5d78f9e3dc34e40c54683f64be32317797ac..8e97f3bc33f439387768ac42796292c43c5d2ad4 100644
+index fff7ad7a45f310783ac96b44575ad3db13d537fa..d93f3a77eb9d19d2d60f9e4723067e995fd11130 100644
 --- a/src/main/java/net/minecraft/server/players/PlayerList.java
 +++ b/src/main/java/net/minecraft/server/players/PlayerList.java
 @@ -335,6 +335,18 @@ public abstract class PlayerList {
@@ -920,7 +920,7 @@ index 683b5d78f9e3dc34e40c54683f64be32317797ac..8e97f3bc33f439387768ac42796292c4
          this.cserver.getPluginManager().callEvent(playerQuitEvent);
          entityplayer.getBukkitEntity().disconnect(playerQuitEvent.getQuitMessage());
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftOfflinePlayer.java b/src/main/java/org/bukkit/craftbukkit/CraftOfflinePlayer.java
-index 714afc98b5150907b45a00060be4e41582333204..9cf758f30303dd35d09bc9d216c41f1c64e31c50 100644
+index 714afc98b5150907b45a00060be4e41582333204..c5304d93c857e0e37f8bf357ac17f61114fb9a2a 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftOfflinePlayer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftOfflinePlayer.java
 @@ -30,13 +30,14 @@ import org.bukkit.plugin.Plugin;
@@ -940,10 +940,10 @@ index 714afc98b5150907b45a00060be4e41582333204..9cf758f30303dd35d09bc9d216c41f1c
          this.profile = profile;
          this.storage = server.console.playerDataStorage;
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index 8c5e7cb371fd5d70132e57b1fbfcd04d8ab8c572..68fc17d7564e57861cee404391d2ab9d4045483d 100644
+index e260b62d912469004739f3e234b65dca6bf9ce08..6b883d3d256c70348d66722ef1d7f5069c9a51fa 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-@@ -261,7 +261,17 @@ import net.md_5.bungee.api.chat.BaseComponent; // Spigot
+@@ -260,7 +260,17 @@ import net.md_5.bungee.api.chat.BaseComponent; // Spigot
  import javax.annotation.Nullable; // Paper
  import javax.annotation.Nonnull; // Paper
  
@@ -962,7 +962,7 @@ index 8c5e7cb371fd5d70132e57b1fbfcd04d8ab8c572..68fc17d7564e57861cee404391d2ab9d
      private final String serverName = "Raa"; // Raa
      private final String serverVersion;
      private final String bukkitVersion = Versioning.getBukkitVersion();
-@@ -323,6 +333,36 @@ public final class CraftServer implements Server {
+@@ -392,6 +402,36 @@ public final class CraftServer implements Server {
          this.structureManager = new CraftStructureManager(console.getStructureManager());
          this.dataPackManager = new CraftDataPackManager(this.getServer().getPackRepository());
  
@@ -999,7 +999,7 @@ index 8c5e7cb371fd5d70132e57b1fbfcd04d8ab8c572..68fc17d7564e57861cee404391d2ab9d
          Bukkit.setServer(this);
  
          // Register all the Enchantments and PotionTypes now so we can stop new registration immediately after
-@@ -2972,4 +3012,137 @@ public final class CraftServer implements Server {
+@@ -3063,4 +3103,137 @@ public final class CraftServer implements Server {
      }
  
      // Paper end
@@ -1138,7 +1138,7 @@ index 8c5e7cb371fd5d70132e57b1fbfcd04d8ab8c572..68fc17d7564e57861cee404391d2ab9d
 +    // Raa end
  }
 diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
-index 717e292040ed7779eb4b6c5fa26665d3df9024e7..ce21782145a6c0e2f3fab486427cb7889c365cc9 100644
+index d4f6935a1bea77e5118bfd538f9b1358c21591a7..6129ef7ecc5d396e9c3145e043bbb618815ff224 100644
 --- a/src/main/java/org/bukkit/craftbukkit/Main.java
 +++ b/src/main/java/org/bukkit/craftbukkit/Main.java
 @@ -312,6 +312,7 @@ public class Main {
@@ -1150,10 +1150,10 @@ index 717e292040ed7779eb4b6c5fa26665d3df9024e7..ce21782145a6c0e2f3fab486427cb788
                  net.minecraft.server.Main.main(options);
              } catch (Throwable t) {
 diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
-index e41f5417304f5b05fa7e2f6b6e1c0095e820f1cc..e6be759570fc92448801377cc243f49f75729aba 100644
+index 59c00045ec903a635966f16cf33e5b4110262953..2975b06d8d999acf73596ef530051e74fbf98d63 100644
 --- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
-@@ -166,6 +166,15 @@ import net.md_5.bungee.api.chat.BaseComponent; // Spigot
+@@ -169,6 +169,15 @@ import net.md_5.bungee.api.chat.BaseComponent; // Spigot
  
  @DelegateDeserialization(CraftOfflinePlayer.class)
  public class CraftPlayer extends CraftHumanEntity implements Player {
@@ -1169,7 +1169,7 @@ index e41f5417304f5b05fa7e2f6b6e1c0095e820f1cc..e6be759570fc92448801377cc243f49f
      private long firstPlayed = 0;
      private long lastPlayed = 0;
      private boolean hasPlayedBefore = false;
-@@ -3147,4 +3156,235 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+@@ -3151,4 +3160,235 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
          return this.spigot;
      }
      // Spigot end

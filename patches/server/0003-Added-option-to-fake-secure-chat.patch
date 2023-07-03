@@ -5,10 +5,10 @@ Subject: [PATCH] Added option to fake secure chat
 
 
 diff --git a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
-index 77d05f7efdcdceef681a75692c208075d873d368..99195cc43b6dc22562b74f4aa679ae8b1e36364c 100644
+index 4ac3fa45cd155ae8a852e26d4d4d1f16b28efdc2..7c0d345ec18d177b594ed1a76b7b767e3003bfb6 100644
 --- a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
 +++ b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
-@@ -262,6 +262,7 @@ public class GlobalConfiguration extends ConfigurationPart {
+@@ -261,6 +261,7 @@ public class GlobalConfiguration extends ConfigurationPart {
              }
          }
          public int maxJoinsPerTick = 5;
@@ -17,7 +17,7 @@ index 77d05f7efdcdceef681a75692c208075d873d368..99195cc43b6dc22562b74f4aa679ae8b
          public boolean loadPermissionsYmlBeforePlugins = true;
          @Constraints.Min(4)
 diff --git a/src/main/java/net/minecraft/server/level/ServerPlayer.java b/src/main/java/net/minecraft/server/level/ServerPlayer.java
-index 5fad40fa88f697108e42461c41012d5964ed7d75..b4d536a48427c6b4315988b82a0e0e39ae1b1506 100644
+index 9d46536f80b5b3e6641fd377c02166a431edfd77..7833c7e77b6b1abecd8ddb81337a970f1e3fea27 100644
 --- a/src/main/java/net/minecraft/server/level/ServerPlayer.java
 +++ b/src/main/java/net/minecraft/server/level/ServerPlayer.java
 @@ -2076,7 +2076,7 @@ public class ServerPlayer extends Player {
