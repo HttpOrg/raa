@@ -68,7 +68,7 @@ jobs:
           scp -B -o StrictHostKeyChecking=no -i id_ecdsa build/libs/raa-paperclip-*-reobf.jar $DOWNLOADS_USERNAME@192.168.0.15:~/files/
           # Run the build script
           # ssh -p 8899 -o StrictHostKeyChecking=no -i id_ecdsa $DOWNLOADS_USERNAME@127.0.0.1 ./handleBuild.sh $project $version $GITHUB_RUN_NUMBER $GITHUB_SHA
-          ssh -o StrictHostKeyChecking=no -i id_ecdsa $DOWNLOADS_USERNAME@192.168.0.15 ./handleBuild.sh $project $version $GITHUB_RUN_NUMBER $GITHUB_SHA
+          ssh -o StrictHostKeyChecking=no -i id_ecdsa $DOWNLOADS_USERNAME@192.168.0.20 ./handleBuild.sh $project $version $GITHUB_RUN_NUMBER $GITHUB_SHA
           rm id_ecdsa
 
       - name: Publish to Maven Repository
