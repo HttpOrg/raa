@@ -5,10 +5,10 @@ Subject: [PATCH] Added network core
 
 
 diff --git a/build.gradle.kts b/build.gradle.kts
-index 149f9088fe806467656e8b1c4157df60fda69ba7..c2b65c396293f84ba46645c857e4e7a7cf8e5e77 100644
+index 8045f92ffdfb4164bcbef99c41359590c45f9006..f87b2c85ca4fbd1d55442e5ec626e32bd6758a0b 100644
 --- a/build.gradle.kts
 +++ b/build.gradle.kts
-@@ -27,6 +27,20 @@ val annotationsVersion = "24.0.1"
+@@ -27,6 +27,20 @@ configurations.api {
  
  dependencies {
      // api dependencies are listed transitively to API consumers
@@ -28,12 +28,12 @@ index 149f9088fe806467656e8b1c4157df60fda69ba7..c2b65c396293f84ba46645c857e4e7a7
 +
      api("com.google.guava:guava:31.1-jre")
      api("com.google.code.gson:gson:2.10")
-     api("net.md-5:bungeecord-chat:1.16-R0.4-deprecated+build.9") // Paper
+     api("net.md-5:bungeecord-chat:$bungeeCordChatVersion-deprecated+build.14") // Paper
 diff --git a/src/main/java/org/bukkit/OfflinePlayer.java b/src/main/java/org/bukkit/OfflinePlayer.java
-index 72175dcae49f75b494ab70958053ed994a8828f4..4e4d3d5e7f2fb3751e9197054bfd23e15239f182 100644
+index bce07d84cafca677bb6fad78c21b82097f06430c..690add29b2feacc9f8923ee8e1ac19e84843f7d4 100644
 --- a/src/main/java/org/bukkit/OfflinePlayer.java
 +++ b/src/main/java/org/bukkit/OfflinePlayer.java
-@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
+@@ -19,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
   * player that is stored on the disk and can, thus, be retrieved without the
   * player needing to be online.
   */
@@ -43,10 +43,10 @@ index 72175dcae49f75b494ab70958053ed994a8828f4..4e4d3d5e7f2fb3751e9197054bfd23e1
      /**
       * Checks if this player is currently online
 diff --git a/src/main/java/org/bukkit/entity/Player.java b/src/main/java/org/bukkit/entity/Player.java
-index 0b4f9dee48f8d49977dc9a5f104ee062ca2cbfae..df52e8a0ab2887b9504d3514ffcaff7b26aaf752 100644
+index f9dd00210c1762a40259f823aeb8d8a5ddc78e3e..b8112f3312901442b544ce35f60dccc296496a0f 100644
 --- a/src/main/java/org/bukkit/entity/Player.java
 +++ b/src/main/java/org/bukkit/entity/Player.java
-@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
+@@ -51,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
  /**
   * Represents a player, connected or not
   */
